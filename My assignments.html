@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>課題トラッカー</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1421;--panel:#151f30;--panel2:#1b2940;--line:#29384f;--text:#edf3fc;--muted:#9aabc2;--accent:#78a9ff;--green:#65d6a2;--orange:#f4bd72;--red:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% -10%,#1b3151 0,transparent 38%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.wrap{max-width:1050px;margin:auto;padding:34px 22px 60px}.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:800}.title{font-size:clamp(27px,5vw,38px);margin:6px 0 4px;letter-spacing:-.04em}.sub{color:var(--muted);font-size:13px}
+button,input,select{font:inherit}button{cursor:pointer;border:0}.primary{background:var(--accent);color:#081426;padding:11px 17px;border-radius:12px;font-weight:800;box-shadow:0 5px 18px #477bc533}.primary:hover{filter:brightness(1.08)}.ghost{background:#26354c;color:var(--text);padding:9px 12px;border-radius:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}.stat{background:#151f30cc;border:1px solid var(--line);border-radius:16px;padding:16px 18px}.stat-label{color:var(--muted);font-size:12px}.stat-value{font-size:27px;font-weight:800;margin-top:5px;letter-spacing:-.04em}.stat-value small{font-size:13px;color:var(--muted);font-weight:600}
+.tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 13px;margin-bottom:10px}.tab{white-space:nowrap;padding:9px 15px;border-radius:999px;background:transparent;color:var(--muted);border:1px solid transparent;font-size:13px}.tab.active{background:#263d5e;border-color:#3d5d87;color:#fff;font-weight:750}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 16px}.toolbar p{margin:0;color:var(--muted);font-size:12px}.group{margin:0 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:17px;overflow:hidden}.group-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:#1a273a;border-bottom:1px solid var(--line)}.group-name{font-weight:800;font-size:15px}.group-meta{color:var(--muted);font-size:11px;margin-top:3px}
+.task{padding:17px 18px;border-bottom:1px solid #263449}.task:last-child{border-bottom:0}.task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.task-name{font-weight:750;font-size:14px}.task-range{color:var(--muted);font-size:12px;margin-top:4px}.task-actions{display:flex;gap:6px}.mini{font-size:11px;color:var(--muted);background:#26354b;padding:6px 9px;border-radius:8px}.mini:hover{color:#fff}.progress-line{height:7px;background:#2a374b;border-radius:99px;overflow:hidden;margin:14px 0 10px}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#6c9dff,#6bd8b0);border-radius:99px;transition:width .25s}
+.metrics{display:flex;align-items:center;gap:15px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.metrics strong{color:var(--text);font-size:13px}.percent{margin-left:auto;color:var(--green);font-weight:800}.current-edit{display:inline-flex;align-items:center;gap:6px}.current-edit input{width:72px;padding:5px 7px;background:#0e1828;border:1px solid #3a4c66;border-radius:7px;color:var(--text);font-size:12px}
+.empty{padding:48px 20px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed #3a4c66;border-radius:17px}.empty strong{display:block;color:var(--text);font-size:16px;margin-bottom:7px}
+.note{color:#8294ad;font-size:11px;line-height:1.7;margin-top:18px}
+dialog{border:1px solid #40516b;border-radius:18px;background:#172337;color:var(--text);width:min(500px,calc(100% - 28px));padding:0;box-shadow:0 25px 90px #0009}dialog::backdrop{background:#050a12bb;backdrop-filter:blur(4px)}.modal-head{padding:19px 21px;border-bottom:1px solid var(--line);font-weight:800;font-size:17px}.form{padding:20px 21px;display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted);font-weight:700}.field input,.field select{width:100%;padding:10px 11px;border-radius:9px;border:1px solid #3a4b64;background:#0e1828;color:var(--text);outline:none}.field input:focus,.field select:focus{border-color:var(--accent)}.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 21px 20px}
+@media(max-width:600px){.wrap{padding:25px 14px 45px}.top{align-items:flex-start;flex-direction:column}.stats{gap:8px}.stat{padding:12px}.stat-value{font-size:22px}.group-head,.task{padding-left:14px;padding-right:14px}.metrics{gap:10px}.percent{margin-left:0}.form{grid-template-columns:1fr}.field.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><div class="eyebrow">STUDY PROGRESS</div><h1 class="title">課題トラッカー</h1><div class="sub">今日の一歩を、ちゃんと見える形に。</div></div>
+    <button class="primary" id="addBtn">＋ 課題を追加</button>
+  </header>
+  <section class="stats">
+    <div class="stat"><div class="stat-label">登録している課題</div><div class="stat-value" id="totalTasks">0<small> 件</small></div></div>
+    <div class="stat"><div class="stat-label">残っているページ・番号</div><div class="stat-value" id="remainingTotal">0<small> 個</small></div></div>
+    <div class="stat"><div class="stat-label">全体の達成率</div><div class="stat-value" id="overallRate">0<small> %</small></div></div>
+  </section>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="toolbar"><p id="listCaption">課題一覧</p><button class="ghost" id="exportBtn">データを書き出す ↗</button></div>
+  <main id="taskList"></main>
+  <p class="note">※「現在」は次に取り組む番号です。例：213〜302で現在223なら、213〜222まで完了・残り80。<br>データはこのブラウザ内に自動保存されます。別の端末やブラウザには自動同期されません。</p>
+</div>
+<dialog id="taskDialog">
+  <div class="modal-head" id="dialogTitle">課題を追加</div>
+  <form id="taskForm">
+    <div class="form">
+      <div class="field"><label for="subject">教科</label><select id="subject" required><option>数学</option><option>英語</option><option>国語</option><option>物理</option><option>化学</option><option>生物</option><option>地学</option><option>社会</option><option>情報</option><option>その他</option></select></div>
+      <div class="field"><label for="book">教材・課題名</label><input id="book" placeholder="例：4STEP" required></div>
+      <div class="field full"><label for="name">範囲・単元名</label><input id="name" placeholder="例：数学C" required></div>
+      <div class="field"><label for="start">開始番号</label><input id="start" type="number" value="1" required></div>
+      <div class="field"><label for="end">終了番号</label><input id="end" type="number" value="100" required></div>
+      <div class="field full"><label for="current">現在（次に取り組む番号）</label><input id="current" type="number" value="1" required></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="ghost" id="cancelBtn">キャンセル</button><button class="primary" type="submit">保存する</button></div>
+  </form>
+</dialog>
+<script>
+const KEY='study-task-tracker-v1';
+const initial=[
+ {id:1,subject:'数学',book:'4STEP',name:'数学C',start:213,end:302,current:223},
+ {id:2,subject:'数学',book:'4STEP',name:'数学Ⅲ',start:1,end:132,current:8}
+];
+let tasks;
+try{tasks=JSON.parse(localStorage.getItem(KEY))||initial}catch{tasks=initial}
+let active='すべて',editingId=null;
+const subjects=['すべて','数学','英語','国語','理科','社会','情報','その他'];
+const $=id=>document.getElementById(id);
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks))}
+function calc(t){const total=Math.max(0,t.end-t.start+1),done=Math.min(total,Math.max(0,t.current-t.start));return{total,done,remaining:total-done,rate:total?Math.round(done/total*100):0}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ const all=tasks.map(t=>({...t,...calc(t)}));
+ const total=all.reduce((a,t)=>a+t.total,0),done=all.reduce((a,t)=>a+t.done,0),remaining=all.reduce((a,t)=>a+t.remaining,0);
+ $('totalTasks').innerHTML=`${tasks.length}<small> 件</small>`;$('remainingTotal').innerHTML=`${remaining.toLocaleString()}<small> 個</small>`;$('overallRate').innerHTML=`${total?Math.round(done/total*100):0}<small> %</small>`;
+ $('tabs').innerHTML=subjects.map(s=>`<button class="tab ${active===s?'active':''}" data-tab="${s}">${s}</button>`).join('');
+ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;render()});
+ const shown=all.filter(t=>active==='すべて'||(active==='理科'?['物理','化学','生物','地学'].includes(t.subject):t.subject===active));
+ $('listCaption').textContent=`${active}の課題 · ${shown.length}件`;
+ if(!shown.length){$('taskList').innerHTML='<div class="empty"><strong>まだ課題がありません</strong>「課題を追加」から最初の課題を登録しよう。</div>';return}
+ const groups=[];const map=new Map();
+ shown.forEach(t=>{const key=t.subject+'__'+t.book;if(!map.has(key)){const g={subject:t.subject,book:t.book,items:[]};map.set(key,g);groups.push(g)}map.get(key).items.push(t)});
+ $('taskList').innerHTML=groups.map(g=>`<section class="group"><div class="group-head"><div><div class="group-name">${esc(g.subject)} - ${esc(g.book)}</div><div class="group-meta">${g.items.length}つの課題</div></div><div class="group-meta">${g.items.reduce((a,t)=>a+t.remaining,0)} 個残り</div></div>${g.items.map(t=>`<article class="task"><div class="task-top"><div><div class="task-name">${esc(t.name)}</div><div class="task-range">範囲：${t.start}〜${t.end}（全${t.total}個）</div></div><div class="task-actions"><button class="mini" data-edit="${t.id}">編集</button><button class="mini" data-delete="${t.id}">削除</button></div></div><div class="progress-line"><div class="progress-fill" style="width:${t.rate}%"></div></div><div class="metrics"><span>現在：<strong>${t.current>t.end?t.end+1:t.current}</strong></span><span>残り：<strong>${t.remaining}</strong></span><span class="current-edit">現在を更新 <input aria-label="${esc(t.name)}の現在" type="number" min="${t.start}" max="${t.end+1}" value="${Math.min(t.end+1,Math.max(t.start,t.current))}" data-current="${t.id}"></span><span class="percent">${t.rate}% 達成</span></div></article>`).join('')}</section>`).join('');
+ document.querySelectorAll('[data-current]').forEach(input=>input.addEventListener('change',()=>{const t=tasks.find(x=>x.id==input.dataset.current);if(!t)return;let v=Number(input.value);if(!Number.isFinite(v))v=t.start;t.current=Math.max(t.start,Math.min(t.end+1,v));save();render()}));
+ document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(Number(b.dataset.edit)));
+ document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{const t=tasks.find(x=>x.id==b.dataset.delete);if(t&&confirm(`「${t.name}」を削除しますか？`)){tasks=tasks.filter(x=>x.id!==t.id);save();render()}});
+}
+function openEdit(id=null){editingId=id;const t=tasks.find(x=>x.id===id);$('dialogTitle').textContent=t?'課題を編集':'課題を追加';$('subject').value=t?.subject||'数学';$('book').value=t?.book||'';$('name').value=t?.name||'';$('start').value=t?.start??1;$('end').value=t?.end??100;$('current').value=t?.current??1;$('taskDialog').showModal()}
+$('addBtn').onclick=()=>openEdit();$('cancelBtn').onclick=()=>$('taskDialog').close();
+$('taskForm').onsubmit=e=>{e.preventDefault();const start=Number($('start').value),end=Number($('end').value),current=Number($('current').value);if(end<start){alert('終了番号は開始番号以上にしてください。');return}if(current<start||current>end+1){alert(`現在は${start}〜${end+1}の範囲で入力してください。`);return}
+ const item={id:editingId??Date.now(),subject:$('subject').value,book:$('book').value.trim(),name:$('name').value.trim(),start,end,current};
+ if(editingId!==null)tasks=tasks.map(t=>t.id===editingId?item:t);else tasks.push(item);save();$('taskDialog').close();render()};
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();URL.revokeObjectURL(url)};
+render();
+</script>
+</body>
+</html>
