@@ -66,6 +66,7 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 #cloudStatus{margin:0 0 10px}
 .subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
 [hidden]{display:none!important}.secrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line,#8883)}.secopt{display:flex;gap:8px;align-items:flex-start;padding:6px 0}.secopt input{width:auto;margin-top:3px}
+.day.has-manual em{text-decoration:underline;font-weight:700}.stepper{display:flex;align-items:center;gap:4px}.stepper button{min-width:34px}.bulk{margin-top:12px;padding:10px;border:1px solid var(--line,#8883);border-radius:10px}.bulk summary{font-weight:700;cursor:pointer}.bulk .dows{display:flex;flex-wrap:wrap;gap:4px 10px;margin:8px 0}.bulk .dows label{display:flex;align-items:center;gap:3px}.bulk .dows input{width:auto}.bulk .brow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -281,22 +282,55 @@ function renderCalendar(){
  $('monthLabel').textContent=`${y}年${m+1}月`;
  let cells='日月火水木金土'.split('').map(w=>`<div class="week">${w}</div>`).join('')+'<div></div>'.repeat(first);
  for(let n=1;n<=last;n++){const d=ymd(new Date(y,m,n)),count=plans.reduce((a,p)=>a+(p.days.get(d)?.count||0),0),due=list.some(t=>t.due===d),goal=list.some(t=>t.goal===d);
-  cells+=`<button class="day ${d===now?'is-today':''} ${d===selected?'selected':''} ${d<now?'past':''}" data-day="${d}" aria-label="${shortDate(d)} ${count}問${due?' 提出日':''}${goal?' 目標日':''}"><span>${n}</span><em>${count?count+'問':''}</em><i>${due?'<u class="m-due">提</u>':''}${goal?'<u class="m-goal">目</u>':''}</i></button>`}
+  cells+=`<button class="day ${plans.some(p=>p.days.get(d)?.manual)?'has-manual':''} ${d===now?'is-today':''} ${d===selected?'selected':''} ${d<now?'past':''}" data-day="${d}" aria-label="${shortDate(d)} ${count}問${due?' 提出日':''}${goal?' 目標日':''}"><span>${n}</span><em>${count?count+'問':''}</em><i>${due?'<u class="m-due">提</u>':''}${goal?'<u class="m-goal">目</u>':''}</i></button>`}
  $('calendar').innerHTML=cells;
  const events=list.flatMap(t=>[t.due===selected?`<div class="event"><u class="m-due">提</u>${esc(label(t))} ${t.dueTime||''}</div>`:'',t.goal===selected?`<div class="event"><u class="m-goal">目</u>${esc(label(t))} ${t.goalTime||''}</div>`:'']).join('');
- const rows=plans.filter(p=>p.days.has(selected)).map(({t,days,late})=>{const p=days.get(selected);return`<div class="plan-line"><div><b>${esc(label(t))}</b><span class="muted">${p.count?rangeText(p):'お休み'}${p.manual?'・手動':''}${late?'・期限切れ':''}</span></div>${late?`<span>${p.count}問</span>`:`<input type="number" inputmode="numeric" min="0" value="${p.count}" data-manual="${t.id}" aria-label="${esc(label(t))}のこの日の問題数">問${p.manual?`<button class="link" data-auto="${t.id}">自動</button>`:''}`}</div>`}).join('');
+ const rows=plans.filter(p=>p.days.has(selected)).map(({t,days,late})=>{const p=days.get(selected);return`<div class="plan-line"><div><b>${esc(label(t))}</b><span class="muted">${p.count?rangeText(p):'お休み'}${p.manual?'・手動':''}${late?'・期限切れ':''}</span></div>${late?`<span>${p.count}問</span>`:`<span class="stepper"><button type="button" data-step="${t.id}" data-d="-1" aria-label="1問減らす">−</button><input type="number" inputmode="numeric" min="0" value="${p.count}" data-manual="${t.id}" aria-label="${esc(label(t))}のこの日の問題数"><button type="button" data-step="${t.id}" data-d="1" aria-label="1問増やす">＋</button>問</span>${p.manual?`<button class="link" data-auto="${t.id}">自動</button>`:''}`}</div>`}).join('');
  const warnings=plans.filter(p=>p.short>0).map(p=>`<div class="warning">${esc(label(p.t))}：この計画だと期限までに ${p.short}問 残ります</div>`).join('');
  const undated=list.filter(t=>!t.due&&!t.goal&&t.current<=t.end).length;
- $('dayDetail').innerHTML=`<h2>${shortDate(selected)}${selected===now?' 今日':''}</h2>${events}${rows||'<div class="muted">この日の予定はありません。</div>'}${rows&&selected>=now?'<div class="muted" style="margin-top:8px">問題数を書き換えると、残りは他の日に自動で配り直されます（0で休み）。</div>':''}${warnings}${undated?`<div class="muted" style="margin-top:8px">期限のない課題が${undated}件あります。「編集」タブで日付を設定すると計画に入ります。</div>`:''}`;
+ $('dayDetail').innerHTML=`<h2>${shortDate(selected)}${selected===now?' 今日':''}</h2>${events}${rows||'<div class="muted">この日の予定はありません。</div>'}${rows&&selected>=now?'<div class="muted" style="margin-top:8px">基本は毎日ほぼ均等に配分します。この日の問題数を書き換える（＋/−でも可）と、残りは他の日に自動で配り直されます（0で休み）。</div>':''}${warnings}${bulkHTML(plans)}${undated?`<div class="muted" style="margin-top:8px">期限のない課題が${undated}件あります。「編集」タブで日付を設定すると計画に入ります。</div>`:''}`;
 }
 $('modes').onclick=e=>{const b=e.target.closest('[data-mode]');if(b){listMode=b.dataset.mode;if(listMode==='calendar'){selected=today();month=toDate(selected);month.setDate(1)}renderList()}};
 $('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b){active=b.dataset.tab;renderList()}};
 $('prevMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);renderCalendar()};
 $('calendar').onclick=e=>{const b=e.target.closest('[data-day]');if(b){selected=b.dataset.day;renderCalendar()}};
-$('dayDetail').onchange=e=>{const el=e.target,t=findTask(el.dataset.manual);if(!t)return;const v=Math.floor(Number(el.value));
- if(el.value!==''&&v>=0){t.manual={...t.manual,[selected]:v};Object.keys(t.manual).forEach(d=>{if(d<today())delete t.manual[d]});save()}renderCalendar()};
-$('dayDetail').onclick=e=>{const b=e.target.closest('[data-auto]');if(b){const t=findTask(b.dataset.auto);delete t.manual[selected];save();renderCalendar()}};
+function setManual(t,d,v){t.manual={...t.manual,[d]:v};Object.keys(t.manual).forEach(k=>{if(k<today())delete t.manual[k]})}
+let bulkOpen=false;
+const limitOf=t=>[t.goal,t.due].find(d=>d&&d>=today())||'';
+function bulkHTML(plans){
+ const opts=plans.filter(p=>p.days.size&&!p.late);if(!opts.length||selected<today())return'';
+ const first=opts.find(p=>p.days.has(selected))||opts[0];
+ return`<details class="bulk" id="bulk"${bulkOpen?' open':''}><summary>期間・曜日でまとめて設定</summary>
+ <label class="field">課題<select id="bTask">${opts.map(p=>`<option value="${p.t.id}"${p===first?' selected':''}>${esc(label(p.t))}</option>`).join('')}</select></label>
+ <div class="brow"><label class="field">開始日<input type="date" id="bFrom" value="${selected}" min="${today()}"></label><label class="field">終了日<input type="date" id="bTo" value="${limitOf(first.t)||selected}" min="${today()}"></label></div>
+ <div class="dows">${'日月火水木金土'.split('').map((w,i)=>`<label><input type="checkbox" class="bdow" value="${i}" checked>${w}</label>`).join('')}</div>
+ <label class="field">1日あたりの問題数（0で休み）<input type="number" inputmode="numeric" min="0" id="bCount" value="10"></label>
+ <div class="actions"><button type="button" id="bAuto">自動に戻す</button><button type="button" class="primary" id="bSet">設定</button></div>
+ <div class="muted">選んだ期間・曜日に当てはまる日だけ変更し、残りの問題は他の日に自動で配り直します。</div></details>`;
+}
+function applyBulk(auto){
+ const t=findTask($('bTask').value),now=today();if(!t)return;
+ let a=$('bFrom').value,z=$('bTo').value;if(a<now)a=now;
+ const n=Math.floor(Number($('bCount').value)),dows=[...$('bulk').querySelectorAll('.bdow:checked')].map(i=>Number(i.value));
+ if(!a||!z||z<a){alert('開始日と終了日を正しく入力してください。');return}
+ if(!auto&&!(n>=0)){alert('1日あたりの問題数を入力してください。');return}
+ if(!dows.length){alert('曜日を1つ以上選んでください。');return}
+ if(daysBetween(a,z)>400){alert('期間は400日以内にしてください。');return}
+ let k=0;
+ for(let d=a;d<=z;d=addDays(d,1)){if(!dows.includes(toDate(d).getDay()))continue;if(auto){if(t.manual)delete t.manual[d]}else setManual(t,d,n);k++}
+ save();renderCalendar();toast(k?`${k}日分を${auto?'自動に戻しました':'設定しました'}。`:'対象の日がありませんでした。',!k);
+}
+$('dayDetail').addEventListener('toggle',e=>{if(e.target.id==='bulk')bulkOpen=e.target.open},true);
+$('dayDetail').onchange=e=>{const el=e.target;
+ if(el.id==='bTask'){const t=findTask(el.value);if(t&&limitOf(t))$('bTo').value=limitOf(t);return}
+ const t=findTask(el.dataset.manual);if(!t)return;const v=Math.floor(Number(el.value));
+ if(el.value!==''&&v>=0){setManual(t,selected,v);save()}renderCalendar()};
+$('dayDetail').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.auto){const t=findTask(b.dataset.auto);delete t.manual[selected];save();renderCalendar()}
+ else if(b.dataset.step){const t=findTask(b.dataset.step),inp=$('dayDetail').querySelector(`input[data-manual="${t.id}"]`);setManual(t,selected,Math.max(0,Math.floor(Number(inp.value))+Number(b.dataset.d)));save();renderCalendar()}
+ else if(b.id==='bSet')applyBulk(false);
+ else if(b.id==='bAuto')applyBulk(true)};
 $('taskList').onclick=e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
  if(d.add!==undefined)openEdit();
  else if(d.open){const id=Number(d.open);openId=openId===id?null:id;renderList()}
