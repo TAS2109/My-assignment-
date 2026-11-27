@@ -65,6 +65,7 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 #toast{position:fixed;left:12px;right:12px;top:12px;max-width:520px;margin:auto;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;z-index:9}#toast.error{background:var(--red);color:var(--panel)}
 #cloudStatus{margin:0 0 10px}
 .subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
+[hidden]{display:none!important}.secrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line,#8883)}.secopt{display:flex;gap:8px;align-items:flex-start;padding:6px 0}.secopt input{width:auto;margin-top:3px}
 </style>
 </head>
 <body>
@@ -88,6 +89,7 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 
   <div id="editView" hidden>
     <button class="primary wide" id="addBtn">＋ 課題を追加</button>
+    <button class="wide" id="matBtn" style="margin-bottom:12px">📚 教材を登録・編集</button>
     <div id="editList"></div>
     <details class="card" id="clearedCard" style="margin-top:12px"><summary id="clearedCount"></summary><div id="clearedList"></div></details>
   </div>
@@ -114,9 +116,11 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 <dialog id="taskDialog">
   <h2 id="dialogTitle">課題を追加</h2>
   <form id="taskForm">
+    <div class="card" id="matPick" style="margin-bottom:12px"><label class="field">登録済みの教材から選ぶ<select id="matSelect"></select></label><div id="secList"></div><div class="muted" id="matNone" hidden>教材が未登録です。編集画面の「教材を登録・編集」から追加できます。</div></div>
     <div class="two"><label class="field">教科<select id="subject"><option>数学</option><option>英語</option><option>国語</option><option>物理</option><option>化学</option><option>地理</option><option>その他</option></select></label><label class="field">教材名<input id="book" placeholder="例：4STEP" required></label></div>
     <label class="field">範囲・単元名<input id="name" placeholder="例：数学C" required></label>
     <div class="two"><label class="field">開始番号<input id="start" type="number" inputmode="numeric" required></label><label class="field">終了番号<input id="end" type="number" inputmode="numeric" required></label></div>
+    <div class="muted" id="rangeHint" style="margin-bottom:9px"></div>
     <label class="field">次に解く番号（空欄なら開始番号）<input id="currentNo" type="number" inputmode="numeric"></label>
     <div class="two"><label class="field">提出日<input id="due" type="date"></label><label class="field">提出時刻（任意）<input id="dueTime" type="time"></label></div>
     <div class="two"><label class="field">目標完了日<input id="goal" type="date"></label><label class="field">目標時刻（任意）<input id="goalTime" type="time"></label></div>
@@ -127,6 +131,12 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
   </form>
 </dialog>
 
+<dialog id="matDialog">
+  <h2>教材の登録</h2>
+  <div id="matListPane"><div id="matListBox" style="display:grid;gap:9px;margin-bottom:12px"></div><button class="primary wide" id="matNewBtn">＋ 教材を追加</button><div class="actions"><button id="matCloseBtn">閉じる</button></div></div>
+  <form id="matForm" hidden></form>
+</dialog>
+
 <dialog id="settingsDialog">
   <h2>設定</h2>
   <label class="field">見た目<select id="themeSelect"><option value="auto">自動（夜18時〜朝6時は暗め）</option><option value="light">いつも明るい</option><option value="dark">いつも暗い</option></select></label>
@@ -135,10 +145,11 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
   <h3>クラウド接続</h3>
   <label class="field">Cloudflare Worker URL<input id="workerUrl" type="url" placeholder="https://study-tracker-api.example.workers.dev"></label>
   <label class="field">アクセスキー（WorkerのAPI_TOKEN）<input id="cloudToken" type="password"></label>
+  <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="autoSaveChk" style="width:auto"> 変更したら自動でクラウドへ保存する</label>
   <button class="wide" id="cloudConnectBtn">接続設定を保存</button>
   <h3>バックアップ</h3>
   <button class="wide" id="exportBtn">課題データをファイルに書き出す</button>
-  <p class="muted">課題データはこのブラウザに自動保存されます。タイマーの記録はクラウドには保存されません。</p>
+  <p class="muted">課題データはこのブラウザに自動保存され、接続設定済みなら変更の数秒後にクラウドへも自動保存されます。タイマーの記録はクラウドには保存されません。</p>
   <div class="actions"><button id="closeSettingsBtn">閉じる</button></div>
 </dialog>
 <div id="toast" role="status" hidden></div>
@@ -154,6 +165,8 @@ const initial=[
  {id:2,subject:'数学',book:'4STEP',name:'数学Ⅲ',start:1,end:132,current:8}
 ];
 let tasks=readStore(KEY,initial),cloudConfig=readStore(CLOUD_KEY,{url:'',token:''}),dirty=readStore(DIRTY_KEY,false);
+const MAT_KEY='study-materials-v1';
+let materials=readStore(MAT_KEY,[]);
 let active='すべて',editingId=null,view='list',listMode='list',openId=null,month=new Date(),selected='',ticker=null,toastTimer=null,lastPress=0,wakeLock=null;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const findTask=id=>tasks.find(t=>t.id==id);
@@ -163,7 +176,8 @@ function toast(message,isError=false){const el=$('toast');el.textContent=message
 /* ---------- 保存・クラウド ---------- */
 const cloudReady=()=>!!(cloudConfig.url&&cloudConfig.token);
 function setDirty(v){dirty=v;writeStore(DIRTY_KEY,v);$('syncBar').hidden=!(dirty&&cloudReady())}
-function save(){if(!writeStore(KEY,tasks))toast('この端末に保存できませんでした。',true);setDirty(true)}
+function saveMaterials(){if(!writeStore(MAT_KEY,materials))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
+function save(){if(!writeStore(KEY,tasks))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
 function setCloudStatus(message){$('cloudStatus').textContent=message}
 async function cloudRequest(method,body){
  if(!cloudReady())throw new Error('先にWorker URLとアクセスキーを登録してください。');
@@ -176,10 +190,34 @@ async function cloudAction(button,work){button.disabled=true;setCloudStatus('通
  try{const message=await work();setCloudStatus(message);toast(message)}
  catch(e){setCloudStatus('失敗しました：'+e.message);toast('クラウド通信に失敗しました：'+e.message,true);alert('クラウド通信エラー\n'+e.message)}
  finally{button.disabled=false}}
-const saveToCloud=button=>cloudAction(button,async()=>{const sent=JSON.stringify(tasks);await cloudRequest('PUT',{tasks});if(sent===JSON.stringify(tasks))setDirty(false);return'クラウドに保存しました。'});
+/* ---------- 自動保存（変更の2秒後にクラウドへ） ---------- */
+let autoTimer=null,autoBusy=false,autoAgain=false;
+const autoOn=()=>cloudReady()&&cloudConfig.auto!==false;
+function scheduleAutoSave(){if(!autoOn())return;clearTimeout(autoTimer);autoTimer=setTimeout(autoSave,2000)}
+async function autoSave(keepalive=false){
+ clearTimeout(autoTimer);
+ if(!autoOn()||!dirty)return;
+ if(autoBusy){autoAgain=true;return}
+ autoBusy=true;setCloudStatus('自動保存中…');
+ try{
+  const sent=JSON.stringify([tasks,materials]);
+  const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method:'PUT',keepalive,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},body:JSON.stringify({tasks,materials})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
+  if(sent===JSON.stringify([tasks,materials]))setDirty(false);
+  setCloudStatus('自動保存しました（'+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'）');
+ }catch(e){
+  setCloudStatus('自動保存に失敗しました（未保存の変更は残っています）：'+e.message);
+  clearTimeout(autoTimer);autoTimer=setTimeout(autoSave,30000); /* 30秒後に再試行 */
+ }finally{
+  autoBusy=false;
+  if(autoAgain){autoAgain=false;scheduleAutoSave()}
+ }
+}
+const saveToCloud=button=>cloudAction(button,async()=>{const sent=JSON.stringify([tasks,materials]);await cloudRequest('PUT',{tasks,materials});if(sent===JSON.stringify([tasks,materials]))setDirty(false);return'クラウドに保存しました。'});
 const loadFromCloud=button=>cloudAction(button,async()=>{const data=await cloudRequest('GET');if(!Array.isArray(data.tasks))throw new Error('クラウドに課題データがありません。先に保存してください。');
  if(!confirm('この端末の課題データをクラウドの内容で置き換えます。よろしいですか？'))return'読み込みをキャンセルしました。';
- tasks=data.tasks;save();setDirty(false);showView(view);return'クラウドから読み込みました。'});
+ tasks=data.tasks;if(Array.isArray(data.materials)){materials=data.materials;writeStore(MAT_KEY,materials)}clearTimeout(autoTimer);writeStore(KEY,tasks);setDirty(false);showView(view);return'クラウドから読み込みました。'});
 
 /* ---------- 日付と計画 ---------- */
 const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
@@ -281,7 +319,7 @@ $('editView').onclick=e=>{const b=e.target.closest('button');if(!b)return;const 
 const DATE_FIELDS=['due','dueTime','goal','goalTime'];
 function openEdit(id=null){const t=id===null?null:findTask(id);editingId=t?t.id:null;$('dialogTitle').textContent=t?'課題を編集':'課題を追加';$('deleteBtn').hidden=$('markClearBtn').hidden=!t;
  const select=$('subject');select.querySelectorAll('[data-old]').forEach(o=>o.remove());if(t&&!CATEGORIES.includes(t.subject)){const o=new Option(t.subject,t.subject);o.dataset.old='';select.add(o)}select.value=t?.subject||'数学';$('book').value=t?.book||'';$('name').value=t?.name||'';$('start').value=t?.start??1;$('end').value=t?.end??100;$('currentNo').value=t?.current??'';
- DATE_FIELDS.forEach(k=>$(k).value=t?.[k]||'');$('taskDialog').showModal()}
+ DATE_FIELDS.forEach(k=>$(k).value=t?.[k]||'');setMatUI(t);$('taskDialog').showModal()}
 $('addBtn').onclick=()=>openEdit();$('cancelBtn').onclick=()=>$('taskDialog').close();
 $('clearDatesBtn').onclick=()=>DATE_FIELDS.forEach(k=>$(k).value='');
 $('deleteBtn').onclick=()=>{if(removeTask(findTask(editingId))){$('taskDialog').close();showView(view)}};
@@ -290,11 +328,78 @@ $('taskForm').onsubmit=e=>{e.preventDefault();const start=Number($('start').valu
  if(end<start){alert('終了番号は開始番号以上にしてください。');return}if(current<start||current>end+1){alert(`次に解く番号は${start}〜${end+1}で入力してください（${end+1}は完了）。`);return}
  const old=editingId===null?null:findTask(editingId),item={...old,id:old?old.id:Date.now(),subject:$('subject').value,book:$('book').value.trim(),name:$('name').value.trim(),start,end,current};
  DATE_FIELDS.forEach(k=>{if($(k).value)item[k]=$(k).value;else delete item[k]});
+ item.mat=Number($('matSelect').value)||0;if(!item.mat)delete item.mat;
  if(!item.due)delete item.dueTime;if(!item.goal)delete item.goalTime;
  if(item.due&&item.goal&&(item.goal+(item.goalTime||'00:00'))>(item.due+(item.dueTime||'23:59'))){alert('目標完了日時は、提出日時より前にしてください。');return}
  /* 番号を直接直したときは、今日の記録をやり直す */
  if(old&&old.current!==current)delete item.day;
  if(!old){tasks.push(item);active='すべて'}else tasks=tasks.map(t=>t===old?item:t);save();$('taskDialog').close();showView(view)};
+
+/* ---------- 教材登録 ---------- */
+const LEVELS=['基本','発展','総合','A問題','B問題'];
+const secLabel=s=>s.name+(s.level?`（${s.level}）`:'');
+const matById=id=>materials.find(m=>m.id==id);
+function setMatUI(t){
+ const sel=$('matSelect');
+ sel.innerHTML='<option value="">（選ばない・手入力）</option>'+materials.map(m=>`<option value="${m.id}">${esc(m.book)}（${esc(m.subject)}）</option>`).join('');
+ sel.value=matById(t?.mat)?String(t.mat):'';
+ sel.parentElement.hidden=!materials.length;$('matNone').hidden=materials.length>0;
+ renderSecs(t);
+}
+function renderSecs(t){
+ const m=matById($('matSelect').value);
+ $('secList').innerHTML=m?(m.sections.map((s,i)=>`<label class="secopt"><input type="checkbox" data-i="${i}"${t&&s.start>=t.start&&s.end<=t.end?' checked':''}><span>${esc(secLabel(s))}　${s.start}〜${s.end}（${s.end-s.start+1}問）</span></label>`).join('')||'<div class="muted">この教材には単元が登録されていません。</div>'):'';
+ updateHint();
+}
+function updateHint(){
+ const m=matById($('matSelect').value),el=$('rangeHint'),a=Number($('start').value),b=Number($('end').value);
+ if(!m||$('start').value===''||$('end').value===''||b<a){el.textContent='';return}
+ const parts=m.sections.filter(s=>s.end>=a&&s.start<=b).map(s=>`${secLabel(s)} ${s.start}〜${s.end}${a<=s.start&&b>=s.end?'':'（一部）'}`);
+ el.textContent=parts.length?'この範囲：'+parts.join(' ／ '):'この範囲は登録済みの単元にありません。';
+}
+$('matSelect').onchange=()=>{const m=matById($('matSelect').value);if(m){$('subject').value=m.subject;$('book').value=m.book}renderSecs(null)};
+$('secList').onchange=()=>{
+ const m=matById($('matSelect').value);if(!m)return;
+ const ch=[...$('secList').querySelectorAll('input:checked')].map(i=>m.sections[i.dataset.i]);
+ if(ch.length){$('start').value=Math.min(...ch.map(s=>s.start));$('end').value=Math.max(...ch.map(s=>s.end));$('name').value=ch.map(secLabel).join('・');if(editingId===null)$('currentNo').value=''}
+ updateHint();
+};
+$('start').oninput=$('end').oninput=updateHint;
+
+let mdraft=null;
+function renderMats(){$('matListBox').innerHTML=materials.map(m=>`<div class="card edit-row"><div><b>${esc(m.book)}</b><span class="muted">${esc(m.subject)}・${m.sections.length}単元</span></div><button data-mat="${m.id}">編集</button></div>`).join('')||'<p class="muted">まだ教材がありません。</p>'}
+function backToMatList(){mdraft=null;renderMats();$('matForm').hidden=true;$('matListPane').hidden=false}
+function renderMatForm(){
+ $('matForm').innerHTML=`<div class="two"><label class="field">教科<select id="mSubject">${CATEGORIES.map(c=>`<option${c===mdraft.subject?' selected':''}>${c}</option>`).join('')}</select></label><label class="field">教材名<input id="mBook" value="${esc(mdraft.book)}" placeholder="例：4STEP"></label></div><h3>単元と問題番号</h3>`
+ +mdraft.sections.map((s,i)=>`<div class="secrow"><input class="sn" style="grid-column:1/3" placeholder="単元名 例：数学C ベクトル" value="${esc(s.name)}"><select class="sl"><option value="">(なし)</option>${LEVELS.map(l=>`<option${!s.cust&&l===s.level?' selected':''}>${l}</option>`).join('')}<option value="__custom"${s.cust||(s.level&&!LEVELS.includes(s.level))?' selected':''}>入力</option></select><input class="sc" style="grid-column:1/4" placeholder="区分を入力" value="${esc(s.level)}"${s.cust||(s.level&&!LEVELS.includes(s.level))?'':' hidden'}><input class="ss" type="number" inputmode="numeric" placeholder="開始番号" value="${esc(s.start)}"><input class="se" type="number" inputmode="numeric" placeholder="終了番号" value="${esc(s.end)}"><button type="button" class="danger" data-del="${i}">削除</button></div>`).join('')
+ +`<button type="button" class="link" id="mAddSec">＋ 単元を追加</button><div class="actions"><button type="button" class="danger" id="mDelete">教材を削除</button><button type="button" id="mCancel">戻る</button><button class="primary">保存</button></div>`;
+}
+function syncDraft(){mdraft.subject=$('mSubject').value;mdraft.book=$('mBook').value;mdraft.sections=[...$('matForm').querySelectorAll('.secrow')].map(r=>({name:r.querySelector('.sn').value,level:r.querySelector('.sl').value==='__custom'?r.querySelector('.sc').value:r.querySelector('.sl').value,cust:r.querySelector('.sl').value==='__custom',start:r.querySelector('.ss').value,end:r.querySelector('.se').value}))}
+function openMatForm(id){const m=matById(id);mdraft=m?JSON.parse(JSON.stringify(m)):{id:Date.now(),subject:'数学',book:'',sections:[{name:'',level:'基本',start:'',end:''}]};renderMatForm();$('matListPane').hidden=true;$('matForm').hidden=false}
+$('matBtn').onclick=()=>{backToMatList();$('matDialog').showModal()};
+$('matCloseBtn').onclick=()=>$('matDialog').close();
+$('matNewBtn').onclick=()=>openMatForm();
+$('matListBox').onclick=e=>{const b=e.target.closest('button');if(b?.dataset.mat)openMatForm(b.dataset.mat)};
+$('matForm').onchange=e=>{if(!e.target.classList.contains('sl'))return;const c=e.target.closest('.secrow').querySelector('.sc');c.hidden=e.target.value!=='__custom';if(!c.hidden)c.focus()};
+$('matForm').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.id==='mAddSec'){syncDraft();const last=mdraft.sections[mdraft.sections.length-1];mdraft.sections.push({name:last?.name||'',level:'',start:last&&last.end!==''?Number(last.end)+1:'',end:''});renderMatForm()}
+ else if(b.dataset.del!==undefined){syncDraft();mdraft.sections.splice(Number(b.dataset.del),1);renderMatForm()}
+ else if(b.id==='mCancel')backToMatList();
+ else if(b.id==='mDelete'){if(!matById(mdraft.id)){backToMatList();return}if(!confirm('この教材の登録を削除しますか？（作成済みの課題は消えません）'))return;materials=materials.filter(m=>m.id!=mdraft.id);saveMaterials();backToMatList()}};
+$('matForm').onsubmit=e=>{e.preventDefault();syncDraft();
+ const book=mdraft.book.trim();if(!book){alert('教材名を入力してください。');return}
+ const secs=[];
+ for(const s of mdraft.sections){
+  if(!s.name.trim()&&s.start===''&&s.end==='')continue;
+  const a=Number(s.start),b=Number(s.end);
+  if(!s.name.trim()||s.start===''||s.end===''||b<a){alert('単元名・開始番号・終了番号を正しく入力してください（終了番号は開始番号以上）。');return}
+  secs.push({name:s.name.trim(),level:s.level.trim(),start:a,end:b});
+ }
+ secs.sort((x,y)=>x.start-y.start);
+ const m={id:mdraft.id,subject:mdraft.subject,book,sections:secs};
+ materials=matById(m.id)?materials.map(x=>x.id==m.id?m:x):[...materials,m];
+ saveMaterials();backToMatList();
+};
 
 /* ---------- タイマーの準備 ---------- */
 const pad=n=>String(n).padStart(2,'0');
@@ -383,7 +488,7 @@ function showView(v){view=v;document.querySelectorAll('[data-view]').forEach(b=>
  if(v==='timer')renderTimer();else{clearInterval(ticker);document.body.classList.remove('running');v==='edit'?renderEdit():renderList()}}
 async function keepAwake(){try{if(navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null)}}catch{}}
 function releaseAwake(){try{wakeLock?.release()}catch{}wakeLock=null}
-document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(run?.since)keepAwake();if(view==='list')renderList()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){autoSave(true);return}if(run?.since)keepAwake();if(view==='list')renderList()});
 
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 $('startBtn').onclick=startRun;$('clearBtn').onclick=clearProblem;$('undoBtn').onclick=$('doneUndoBtn').onclick=undoRun;$('pauseBtn').onclick=togglePause;$('saveRunBtn').onclick=saveRun;
@@ -393,11 +498,11 @@ document.addEventListener('keydown',e=>{if(view!=='timer'||!run||e.ctrlKey||e.me
 document.addEventListener('keyup',e=>{if(view==='timer'&&run&&e.code==='Space')e.preventDefault()});
 
 /* ---------- 設定 ---------- */
-$('settingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;setCloudStatus(!cloudReady()?'クラウド未接続です。下で接続設定をしてください。':dirty?'クラウドに未保存の変更があります。':'接続設定済みです。');$('settingsDialog').showModal()};
+$('settingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;$('autoSaveChk').checked=cloudConfig.auto!==false;setCloudStatus(!cloudReady()?'クラウド未接続です。下で接続設定をしてください。':dirty?'クラウドに未保存の変更があります。':'接続設定済みです。');$('settingsDialog').showModal()};
 $('closeSettingsBtn').onclick=()=>$('settingsDialog').close();
-$('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,''),token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token};writeStore(CLOUD_KEY,cloudConfig);setCloudStatus('接続設定を保存しました。');$('syncBar').hidden=!dirty};
+$('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,''),token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token,auto:$('autoSaveChk').checked};writeStore(CLOUD_KEY,cloudConfig);setCloudStatus('接続設定を保存しました。');$('syncBar').hidden=!dirty;scheduleAutoSave()};
 $('cloudSaveBtn').onclick=()=>saveToCloud($('cloudSaveBtn'));$('syncBar').onclick=()=>saveToCloud($('syncBar'));$('cloudLoadBtn').onclick=()=>loadFromCloud($('cloudLoadBtn'));
-$('exportBtn').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('exportBtn').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({tasks,materials},null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 /* ---------- 見た目（時間帯） ---------- */
 const THEME_KEY='study-theme-v1';
 function applyLook(){const now=new Date(),h=now.getHours()+now.getMinutes()/60,night=h<6||h>=18,mode=readStore(THEME_KEY,'auto'),root=document.documentElement;
@@ -409,6 +514,7 @@ function applyLook(){const now=new Date(),h=now.getHours()+now.getMinutes()/60,n
  /* 6〜18時は太陽、それ以外は月が左から右へ弧を描く */
  const pos=((h+(night?6:-6))%24%12)/12;$('orb').style.left=`${45+pos*19}%`;$('orb').style.top=`${66-Math.sin(Math.PI*pos)*52}px`}
 $('themeSelect').value=readStore(THEME_KEY,'auto');$('themeSelect').onchange=e=>{writeStore(THEME_KEY,e.target.value);applyLook()};
+window.addEventListener('pagehide',()=>autoSave(true));window.addEventListener('online',()=>autoSave());
 setInterval(applyLook,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)applyLook()});
 applyLook();
 showView(run?'timer':'list');
