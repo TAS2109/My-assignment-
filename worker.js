@@ -22,12 +22,13 @@ export default {
     }
 
     if (request.method === 'GET') {
-      return reply({ tasks: await env.TASKS_KV.get(KEY, 'json') });
+      return reply({ tasks: await env.TASKS_KV.get(KEY, 'json'), materials: await env.TASKS_KV.get('materials', 'json') });
     }
     if (request.method === 'PUT') {
       const body = await request.json().catch(() => null);
       if (!Array.isArray(body?.tasks)) return reply({ error: '課題データの形式が違います' }, 400);
       await env.TASKS_KV.put(KEY, JSON.stringify(body.tasks));
+      if (Array.isArray(body.materials)) await env.TASKS_KV.put('materials', JSON.stringify(body.materials));
       return reply({ ok: true });
     }
     return reply({ error: '使えない操作です' }, 405);
