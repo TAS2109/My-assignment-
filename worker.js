@@ -1,46 +1,45 @@
-const corsHeaders = (origin, allowedOrigin) => ({
-  "Access-Control-Allow-Origin": allowedOrigin === "*" ? "*" : allowedOrigin,
-  "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Vary": "Origin"
-});
+// 課題トラッカー用クラウド保存API（Cloudflare Workers + KV）
+// 必要な設定：KVバインディング TRACKER_KV ／ シークレット API_TOKEN
+const KEY = 'tasks';
+
+const HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Cache-Control': 'no-store',
+};
+
+const reply = (data, status = 200) => Response.json(data, { status, headers: HEADERS });
 
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "";
-    const allowedOrigin = env.ALLOWED_ORIGIN || "*";
-    const headers = corsHeaders(origin, allowedOrigin);
+    // ブラウザが本番の通信前に送る確認リクエスト
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: HEADERS });
 
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-    const url = new URL(request.url);
-    if (url.pathname !== "/api/tasks") return Response.json({ error: "Not found" }, { status: 404, headers });
+    if (new URL(request.url).pathname !== '/api/tasks') return reply({ error: 'URLが違います' }, 404);
 
-    const auth = request.headers.get("Authorization") || "";
-    if (!env.API_TOKEN || auth !== `Bearer ${env.API_TOKEN}`) {
-      return Response.json({ error: "アクセスキーが正しくありません。" }, { status: 401, headers });
+    if (!env.API_TOKEN) return reply({ error: 'API_TOKENが未設定です' }, 500);
+    if (!env.TRACKER_KV) return reply({ error: 'TRACKER_KVが未設定です' }, 500);
+    if (request.headers.get('Authorization') !== `Bearer ${env.API_TOKEN}`) {
+      return reply({ error: 'アクセスキーが違います' }, 401);
     }
 
-    if (request.method === "GET") {
-      const row = await env.DB.prepare("SELECT payload, updated_at FROM task_data WHERE id = 1").first();
-      if (!row) return Response.json({ tasks: null, updatedAt: null }, { headers });
-      return Response.json({ tasks: JSON.parse(row.payload), updatedAt: row.updated_at }, { headers });
+    if (request.method === 'GET') {
+      const saved = await env.TRACKER_KV.get(KEY, 'json');
+      return reply(saved ?? { tasks: null });
     }
 
-    if (request.method === "PUT") {
+    if (request.method === 'PUT') {
+      const text = await request.text();
+      if (text.length > 500_000) return reply({ error: 'データが大きすぎます' }, 413);
       let body;
-      try { body = await request.json(); }
-      catch { return Response.json({ error: "JSON形式のデータを送信してください。" }, { status: 400, headers }); }
-      if (!Array.isArray(body.tasks) || body.tasks.length > 2000) {
-        return Response.json({ error: "課題データの形式が正しくありません。" }, { status: 400, headers });
-      }
-      const payload = JSON.stringify(body.tasks);
-      if (payload.length > 500000) return Response.json({ error: "データが大きすぎます。" }, { status: 413, headers });
-      const updatedAt = new Date().toISOString();
-      await env.DB.prepare(
-        "INSERT INTO task_data (id, payload, updated_at) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at"
-      ).bind(payload, updatedAt).run();
-      return Response.json({ ok: true, updatedAt }, { headers });
+      try { body = JSON.parse(text); } catch { return reply({ error: 'JSONの形式が正しくありません' }, 400); }
+      if (!Array.isArray(body?.tasks)) return reply({ error: 'tasksがありません' }, 400);
+      // 日付や計画などの項目も、そのまま保存する
+      await env.TRACKER_KV.put(KEY, JSON.stringify({ tasks: body.tasks, updatedAt: new Date().toISOString() }));
+      return reply({ ok: true });
     }
-    return Response.json({ error: "Method not allowed" }, { status: 405, headers });
-  }
+
+    return reply({ error: '未対応の操作です' }, 405);
+  },
 };
