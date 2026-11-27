@@ -2,134 +2,416 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#101827">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f5fa">
+<script>(function(){var m='auto';try{m=JSON.parse(localStorage.getItem('study-theme-v1'))||'auto'}catch(e){}var h=new Date().getHours();document.documentElement.dataset.theme=m==='dark'||(m==='auto'&&(h<6||h>=18))?'dark':'light'})()</script>
 <title>課題トラッカー</title>
 <style>
-:root{color-scheme:dark;--bg:#0d1421;--panel:#151f30;--panel2:#1b2940;--line:#29384f;--text:#edf3fc;--muted:#9aabc2;--accent:#78a9ff;--green:#65d6a2;--orange:#f4bd72;--red:#ff8585}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% -10%,#1b3151 0,transparent 38%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
-.wrap{max-width:1050px;margin:auto;padding:34px 22px 60px}.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px}
-.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:800}.title{font-size:clamp(27px,5vw,38px);margin:6px 0 4px;letter-spacing:-.04em}.sub{color:var(--muted);font-size:13px}
-button,input,select{font:inherit}button{cursor:pointer;border:0}.primary{background:var(--accent);color:#081426;padding:11px 17px;border-radius:12px;font-weight:800;box-shadow:0 5px 18px #477bc533}.primary:hover{filter:brightness(1.08)}.ghost{background:#26354c;color:var(--text);padding:9px 12px;border-radius:10px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}.stat{background:#151f30cc;border:1px solid var(--line);border-radius:16px;padding:16px 18px}.stat-label{color:var(--muted);font-size:12px}.stat-value{font-size:27px;font-weight:800;margin-top:5px;letter-spacing:-.04em}.stat-value small{font-size:13px;color:var(--muted);font-weight:600}
-.tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 13px;margin-bottom:10px}.tab{white-space:nowrap;padding:9px 15px;border-radius:999px;background:transparent;color:var(--muted);border:1px solid transparent;font-size:13px}.tab.active{background:#263d5e;border-color:#3d5d87;color:#fff;font-weight:750}
-.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 16px}.toolbar p{margin:0;color:var(--muted);font-size:12px}.group{margin:0 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:17px;overflow:hidden}.group-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:#1a273a;border-bottom:1px solid var(--line)}.group-name{font-weight:800;font-size:15px}.group-meta{color:var(--muted);font-size:11px;margin-top:3px}
-.task{padding:13px 16px;border-bottom:1px solid #263449}.task:last-child{border-bottom:0}.task-top{display:grid;grid-template-columns:minmax(130px,1.2fr) minmax(210px,1fr) auto;align-items:center;gap:14px}.task-name{font-weight:750;font-size:14px}.task-range{color:var(--muted);font-size:12px;margin-top:4px}.task-actions{display:flex;gap:6px}.mini{font-size:11px;color:var(--muted);background:#26354b;padding:6px 9px;border-radius:8px}.mini:hover{color:#fff}.progress-line{height:7px;background:#2a374b;border-radius:99px;overflow:hidden;margin:0}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#6c9dff,#6bd8b0);border-radius:99px;transition:width .25s}
-.metrics{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:9px}.metrics strong{color:var(--text);font-size:13px}.percent{margin-left:auto;color:var(--green);font-weight:800}.current-edit{display:inline-flex;align-items:center;gap:6px}.current-edit input{width:65px;padding:5px 7px;background:#0e1828;border:1px solid #3a4c66;border-radius:7px;color:var(--text);font-size:12px}.advance{background:#244d49;color:#8ff0c5;border:1px solid #347565;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap}.advance:hover{background:#2c6258}.advance:disabled{opacity:.4;cursor:default}.reverse{background:#49313a;color:#ffc0c8;border:1px solid #76505b;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap}.reverse:hover{background:#603c48}.reverse:disabled{opacity:.4;cursor:default}.task-main{min-width:0}.task-progress{min-width:0}.task-controls{display:flex;align-items:center;gap:6px;justify-content:flex-end}
-.empty{padding:48px 20px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed #3a4c66;border-radius:17px}.empty strong{display:block;color:var(--text);font-size:16px;margin-bottom:7px}
-.note{color:#8294ad;font-size:11px;line-height:1.7;margin-top:18px}
-dialog{border:1px solid #40516b;border-radius:18px;background:#172337;color:var(--text);width:min(500px,calc(100% - 28px));padding:0;box-shadow:0 25px 90px #0009}dialog::backdrop{background:#050a12bb;backdrop-filter:blur(4px)}.modal-head{padding:19px 21px;border-bottom:1px solid var(--line);font-weight:800;font-size:17px}.form{padding:20px 21px;display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted);font-weight:700}.field input,.field select{width:100%;padding:10px 11px;border-radius:9px;border:1px solid #3a4b64;background:#0e1828;color:var(--text);outline:none}.field input:focus,.field select:focus{border-color:var(--accent)}.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 21px 20px}
-@media(max-width:700px){.wrap{padding:25px 14px 45px}.top{align-items:flex-start;flex-direction:column}.stats{gap:8px}.stat{padding:12px}.stat-value{font-size:22px}.group-head,.task{padding-left:12px;padding-right:12px}.task-top{grid-template-columns:minmax(0,1fr) auto;gap:9px}.task-progress{grid-column:1/-1;grid-row:2}.task-controls{grid-column:2;grid-row:1}.task-main{grid-column:1;grid-row:1}.metrics{gap:9px}.percent{margin-left:0}.current-edit{display:none}.form{grid-template-columns:1fr}.field.full{grid-column:auto}}
+/* 配色：昼は白いノート、夜は黒ではなく明るめの紺 */
+:root{color-scheme:light;--bg:#f2f5fa;--panel:#fff;--soft:#e6ebf5;--line:#d9e0ec;--field:#fff;--field-line:#bcc7da;--text:#1b2438;--muted:#546079;--accent:#2a57cc;--on-accent:#fff;--accent-soft:#e3ebff;--green:#117350;--green-soft:#dcf3e8;--orange:#975200;--red:#c22737;--red-soft:#fde5e8;--blue:#1668a8;--track:#e3e8f1;--shadow:0 1px 2px #1b24380f,0 5px 16px #1b24380d;--backdrop:#1b243880}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#232b3e;--panel:#2e384f;--soft:#3b4763;--line:#45516d;--field:#252e43;--field-line:#5a6887;--text:#f4f6fc;--muted:#c0cadd;--accent:#9dbbff;--on-accent:#14203a;--accent-soft:#40537e;--green:#80e2b6;--green-soft:#2d5250;--orange:#ffc97e;--red:#ffa0a6;--red-soft:#5c3a4a;--blue:#94d2ff;--track:#46526e;--shadow:0 2px 10px #0003;--backdrop:#0d1220a6}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.5;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:12px;background:var(--soft);color:var(--text);padding:10px 14px;min-height:44px;font-weight:700;touch-action:manipulation}button:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--on-accent)}.danger{background:var(--red-soft);color:var(--red)}.link{background:transparent;color:var(--accent);padding-left:4px;padding-right:4px}.wide{width:100%}
+input,select{width:100%;min-width:0;min-height:44px;padding:9px 11px;border-radius:10px;border:1px solid var(--field-line);background:var(--field);color:var(--text);font-size:16px}input[type="date"],input[type="time"]{padding-left:7px;padding-right:4px;font-size:15px}
+.wrap{max-width:680px;margin:auto;padding:14px 14px 40px}
+/* ヘッダー：時間帯で空の色が変わり、太陽と月が動く */
+header{position:relative;overflow:hidden;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-height:112px;padding:18px;border-radius:22px;margin-bottom:12px;background:linear-gradient(165deg,var(--sky1),var(--sky2));color:var(--sky-text);--sky1:#9ed2ff;--sky2:#e4f4ff;--sky-text:#122c4a;--orb:#ffd447}
+:root[data-time="morning"] header{--sky1:#ffd2b0;--sky2:#d3ecff;--sky-text:#3a2742;--orb:#ffbf45}
+:root[data-time="evening"] header{--sky1:#d3c2f5;--sky2:#ffc9a3;--sky-text:#35214a;--orb:#ff8a4c}
+:root[data-time="night"] header{--sky1:#27336b;--sky2:#515a99;--sky-text:#fff;--orb:#fff1bd}
+.orb{position:absolute;width:34px;height:34px;border-radius:50%;background:var(--orb);box-shadow:0 0 22px 6px color-mix(in srgb,var(--orb) 55%,transparent);pointer-events:none}
+header>div,header>button{position:relative}h1{font-size:22px;margin:0 0 6px}header p{margin:0;font-size:13px;font-weight:600}header button{background:#ffffffc9;color:#1b2438;white-space:nowrap}
+.views{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--panel);box-shadow:var(--shadow);border-radius:16px;padding:5px;margin-bottom:14px}.views button{background:transparent;color:var(--muted);padding:8px 4px;white-space:nowrap;font-size:14px}.views button.active{background:var(--accent);color:var(--on-accent)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border-radius:13px;padding:4px;margin-bottom:12px}.modes button{min-height:38px;padding:6px;background:transparent;color:var(--muted);font-size:14px;border-radius:10px}.modes button.active{background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
+.card{background:var(--panel);box-shadow:var(--shadow);border-radius:18px;padding:16px;margin-bottom:12px}
+.muted{color:var(--muted);font-size:12px}.bar{height:9px;background:var(--track);border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--accent);border-radius:99px}
+.summary-line{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;font-size:14px;margin-bottom:9px}.summary-line strong{font-size:22px;margin-left:4px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:2px;margin-bottom:10px}.tabs button{white-space:nowrap;border-radius:99px;min-height:38px;padding:5px 15px;background:transparent;color:var(--muted)}.tabs button.active{background:var(--text);color:var(--bg)}
+#syncBar{width:100%;margin-bottom:12px;background:var(--green-soft);color:var(--green)}
+.empty{text-align:center;color:var(--muted);padding:40px 16px}.empty button{margin-top:14px}
+/* 教科の色 */
+[data-s]{--s:#64748b}[data-s="数学"]{--s:#3b6fe0}[data-s="英語"]{--s:#d6437f}[data-s="国語"]{--s:#dc5b3c}[data-s="物理"]{--s:#8559d6}[data-s="化学"]{--s:#17936b}[data-s="地理"]{--s:#b97b0a}
+.tag{flex:none;display:inline-block;font-size:11px;font-weight:800;line-height:1.7;border-radius:6px;padding:0 7px;background:color-mix(in srgb,var(--s) 15%,var(--panel));color:color-mix(in srgb,var(--s) 55%,var(--text))}
+.list{display:grid;gap:9px}.item,.edit-row{background:var(--panel);box-shadow:var(--shadow);border-radius:16px;border-left:6px solid var(--s)}.item.finished{background:var(--green-soft)}
+.item-main{display:flex;align-items:center;gap:10px;padding-right:12px}.item-info{flex:1;min-width:0;display:block;text-align:left;background:transparent;border-radius:0;padding:13px 0 13px 12px;font-weight:400}.item-info>span{display:block}.item-info .item-top{display:flex;align-items:center;gap:8px}.item-name{font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.item-info .item-sub{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:center;font-size:13px;color:var(--muted);margin:7px 0}.item-sub b{color:var(--text);font-size:15px}.due{margin-left:auto;font-weight:700}.due.soon{color:var(--orange)}.due.urgent{color:var(--red);background:var(--red-soft);border-radius:6px;padding:0 7px}
+.item-info .thin{display:block;height:6px}.thin .fill{display:block;background:var(--s)}.item-info .today{font-size:12px;color:var(--accent);margin-top:7px;font-weight:700}.item-info .today.ok{color:var(--green)}
+.item-main>button:not(.item-info){flex:none;width:62px;min-height:58px;padding:6px;border-radius:16px}.item-main>.plus{background:var(--accent-soft);color:var(--accent);font-size:18px}:root[data-theme="dark"] .item-main>.plus{color:var(--text)}.item-main>button.clear-btn{width:84px;white-space:nowrap;font-size:13px;background:var(--green);color:var(--panel)}.item-more{padding:0 12px 13px 12px;display:grid;gap:9px}
+.edit-row{display:flex;align-items:center;gap:8px;padding:12px}.edit-row>div{flex:1;min-width:0}.edit-row b,.edit-row span.muted{display:block}.edit-row b{overflow-wrap:anywhere;margin-bottom:3px}#addBtn{margin-bottom:12px}#clearedList{display:grid;gap:9px}#clearedList .edit-row{box-shadow:none;background:var(--bg)}#clearedList .edit-row:first-child{margin-top:12px}
+/* カレンダー */
+.month{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.week{text-align:center;font-size:11px;color:var(--muted);padding:3px 0}.week:first-child{color:var(--red)}.week:nth-child(7){color:var(--blue)}
+.day{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:62px;padding:4px 0;border-radius:10px;border:2px solid transparent;background:var(--bg);font-size:13px}.day em{font-style:normal;font-size:11px;color:var(--accent);min-height:16px}.day i{display:flex;gap:2px;font-style:normal;min-height:15px}.day.past{background:transparent;color:var(--muted);font-weight:500}.day.is-today{background:var(--accent-soft)}:root[data-theme="dark"] .day.is-today em{color:var(--text)}.day.selected{border-color:var(--accent)}
+u{text-decoration:none;font-size:10px;font-weight:800;border-radius:4px;padding:0 3px;color:var(--panel)}.m-due{background:var(--red)}.m-goal{background:var(--orange)}
+#dayDetail h2{font-size:16px;margin:0 0 8px}.event{display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:7px}.plan-line{display:flex;align-items:center;gap:7px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}.plan-line>div{flex:1;min-width:0}.plan-line b,.plan-line span.muted{display:block}.plan-line input{width:68px;text-align:right}.warning{color:var(--orange);font-size:12px;font-weight:700;margin-top:9px}
+/* タイマー準備 */
+.row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}.row input{width:76px;text-align:right}
+label.field{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:11px}label.field input,label.field select{display:block;margin-top:5px}
+.block .row{margin-top:10px}.chips button{min-height:38px;padding:5px 13px;font-size:13px}
+.problems{margin-top:12px;border-top:1px solid var(--line)}.problem-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}.problem-row b{margin-right:auto;color:var(--text);font-size:14px}.problem-row input{width:70px;text-align:right}.problem-row.custom input{border:2px solid var(--orange);color:var(--orange);font-weight:700}
+.start-bar{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);padding:12px 0 calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}.start-bar strong{display:block;font-size:22px}.start-bar button{font-size:17px;padding:14px 30px}
+details summary{cursor:pointer;font-weight:700;font-size:14px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);margin-top:10px;font-size:13px}
+/* 計測画面：ボタンが常に画面内に収まるようにする */
+body.running .wrap{padding:8px 10px 0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:auto}body.running header,body.running .views{display:none}body.running #timerView,body.running #runPanel{flex:1;display:flex;flex-direction:column;min-height:0}
+.splits{flex:1;min-height:110px;overflow:auto;position:relative;background:var(--panel);box-shadow:var(--shadow);border-radius:16px}table{width:100%;border-collapse:collapse;table-layout:fixed}th{position:sticky;top:0;background:var(--panel);font-size:11px;color:var(--muted);text-align:right;padding:10px 7px;border-bottom:1px solid var(--line)}th:first-child{text-align:left;width:29%}td{text-align:right;font-size:13px;padding:8px 7px;border-bottom:1px solid var(--line);white-space:nowrap}td:first-child{text-align:left;font-weight:800}td small{display:block;color:var(--muted);font-weight:500;font-size:10px;overflow:hidden;text-overflow:ellipsis}tr.now{background:var(--accent-soft)}tr.now small{color:var(--text)}
+.ahead{color:var(--green)}.behind{color:var(--red)}
+.clock{text-align:right;font-size:clamp(46px,14vw,76px);font-weight:800;line-height:1.25;color:var(--green);letter-spacing:-.02em}.clock.behind{color:var(--red)}.clock.paused{color:var(--orange)}.clock.done{color:var(--blue)}
+.current{padding:2px 2px 12px}.current-line{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px;font-size:17px;font-weight:800}.fill.time{background:var(--accent)}.fill.time.over{background:var(--red)}.current .muted{margin-top:6px}
+.result{text-align:right;font-size:17px;font-weight:800;padding:0 2px 14px}
+.controls{padding-bottom:calc(10px + env(safe-area-inset-bottom))}.big{width:100%;min-height:84px;font-size:23px;margin-bottom:8px;border-radius:20px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:18px;box-shadow:0 20px 70px #0006}dialog::backdrop{background:var(--backdrop)}dialog h2{font-size:17px;margin:0 0 14px}dialog h3{font-size:13px;margin:20px 0 9px}.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}.actions .danger{margin-right:auto}
+#toast{position:fixed;left:12px;right:12px;top:12px;max-width:520px;margin:auto;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;z-index:9}#toast.error{background:var(--red);color:var(--panel)}
+#cloudStatus{margin:0 0 10px}
+.subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div><div class="eyebrow">STUDY PROGRESS</div><h1 class="title">課題トラッカー</h1><div class="sub">今日の一歩を、ちゃんと見える形に。</div></div>
-    <button class="primary" id="addBtn">＋ 課題を追加</button>
-  </header>
-  <section class="stats">
-    <div class="stat"><div class="stat-label">登録している課題</div><div class="stat-value" id="totalTasks">0<small> 件</small></div></div>
-    <div class="stat"><div class="stat-label">残っているページ・番号</div><div class="stat-value" id="remainingTotal">0<small> 個</small></div></div>
-    <div class="stat"><div class="stat-label">全体の達成率</div><div class="stat-value" id="overallRate">0<small> %</small></div></div>
-  </section>
-  <nav class="tabs" id="tabs"></nav>
-  <div class="toolbar"><p id="listCaption">課題一覧</p><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="ghost" id="cloudSettingsBtn">☁ 接続設定</button><button class="ghost" id="cloudLoadBtn">クラウドから読込</button><button class="ghost" id="cloudSaveBtn">クラウドへ保存</button><button class="ghost" id="exportBtn">バックアップ ↗</button></div></div>
-  <div id="cloudStatus" class="note" style="margin:0 0 12px">クラウド未接続：接続設定からWorker URLとアクセスキーを登録してください。</div>
-  <main id="taskList"></main>
-  <p class="note">※「現在」は次に取り組む番号です。例：213〜302で現在223なら、213〜222まで完了・残り80。<br>データはこのブラウザ内に自動保存されます。別の端末やブラウザには自動同期されません。</p>
-</div>
-<dialog id="cloudDialog">
-  <div class="modal-head">クラウド接続設定</div>
-  <div class="form">
-    <div class="field full"><label for="workerUrl">Cloudflare Worker URL</label><input id="workerUrl" type="url" placeholder="https://study-tracker-api.example.workers.dev"></div>
-    <div class="field full"><label for="cloudToken">アクセスキー（WorkerのAPI_TOKEN）</label><input id="cloudToken" type="password" placeholder="アクセスキー"></div>
-    <div class="field full"><span class="note" style="margin:0">URLとアクセスキーはこのブラウザに保存されます。</span></div>
-  </div>
-  <div class="modal-actions"><button type="button" class="ghost" id="cloudCancelBtn">キャンセル</button><button type="button" class="primary" id="cloudConnectBtn">設定を保存</button></div>
-</dialog>
-<dialog id="taskDialog">
-  <div class="modal-head" id="dialogTitle">課題を追加</div>
-  <form id="taskForm">
-    <div class="form">
-      <div class="field"><label for="subject">教科</label><select id="subject" required><option>数学</option><option>英語</option><option>国語</option><option>物理</option><option>化学</option><option>生物</option><option>地学</option><option>社会</option><option>情報</option><option>その他</option></select></div>
-      <div class="field"><label for="book">教材・課題名</label><input id="book" placeholder="例：4STEP" required></div>
-      <div class="field full"><label for="name">範囲・単元名</label><input id="name" placeholder="例：数学C" required></div>
-      <div class="field"><label for="start">開始番号</label><input id="start" type="number" value="1" required></div>
-      <div class="field"><label for="end">終了番号</label><input id="end" type="number" value="100" required></div>
-      <div class="field full"><label for="current">現在（次に取り組む番号）</label><input id="current" type="number" value="1" required></div>
+  <header><span class="orb" id="orb" aria-hidden="true"></span><div><h1>課題トラッカー</h1><p id="today"></p><p id="greeting"></p></div><button id="settingsBtn">⚙ 設定</button></header>
+  <nav class="views"><button data-view="list">一覧</button><button data-view="edit">編集</button><button data-view="timer">⏱ タイマー</button></nav>
+
+  <div id="listView">
+    <button id="syncBar" hidden>☁ 未保存の変更があります。タップしてクラウドへ保存</button>
+    <div class="modes" id="modes"><button data-mode="list">リスト</button><button data-mode="calendar">📅 カレンダー</button></div>
+    <div id="listPane">
+      <div class="card" id="summaryCard"></div>
+      <div class="tabs" id="tabs"></div>
+      <main id="taskList"></main>
     </div>
-    <div class="modal-actions"><button type="button" class="ghost" id="cancelBtn">キャンセル</button><button class="primary" type="submit">保存する</button></div>
+    <div id="calendarPane" hidden>
+      <div class="card"><div class="month"><button id="prevMonth" aria-label="前の月">‹</button><strong id="monthLabel"></strong><button id="nextMonth" aria-label="次の月">›</button></div><div class="calendar" id="calendar"></div><div class="muted" style="margin-top:9px"><u class="m-due">提</u> 提出日　<u class="m-goal">目</u> 目標完了日　青い数字はその日にやる問題数</div></div>
+      <div class="card" id="dayDetail"></div>
+    </div>
+  </div>
+
+  <div id="editView" hidden>
+    <button class="primary wide" id="addBtn">＋ 課題を追加</button>
+    <div id="editList"></div>
+    <details class="card" id="clearedCard" style="margin-top:12px"><summary id="clearedCount"></summary><div id="clearedList"></div></details>
+  </div>
+
+  <div id="timerView" hidden>
+    <div id="setupPanel">
+      <div id="blocks"></div>
+      <button class="link" id="addBlockBtn">＋ 別の課題も続けてやる</button>
+      <div class="card"><div class="row"><span>1問の基本時間</span><input id="baseMin" type="number" inputmode="numeric" min="0">分<input id="baseSec" type="number" inputmode="numeric" min="0">秒</div><div class="muted" style="margin-top:8px">時間が違う問題は、上の一覧で個別に変えてください（オレンジ色になります）。</div><button class="link" id="resetTimesBtn">個別の時間をすべて基本に戻す</button></div>
+      <details class="card" id="historyCard"><summary>これまでの記録</summary><div id="historyList"></div></details>
+      <div class="start-bar"><div><span class="muted" id="planCount"></span><strong id="planTotal"></strong></div><button class="primary" id="startBtn">▶ スタート</button></div>
+    </div>
+    <div id="runPanel" hidden>
+      <div class="splits" id="splits"><table><thead><tr><th>問題</th><th>目標</th><th>記録</th><th>差</th></tr></thead><tbody id="splitBody"></tbody></table></div>
+      <div class="clock" id="clock">0:00.00</div>
+      <div class="current" id="current"><div class="current-line"><span id="nowName"></span><span id="nowTime"></span></div><div class="bar"><div class="fill time" id="timeFill"></div></div><div class="muted" id="nowInfo"></div></div>
+      <div class="result" id="result" hidden></div>
+      <div class="controls" id="runControls"><button class="primary big" id="clearBtn">クリア</button><div class="three"><button id="undoBtn">↶ 戻す</button><button id="pauseBtn">一時停止</button><button class="danger" id="quitBtn">やめる</button></div></div>
+      <div class="controls" id="doneControls" hidden><button class="primary big" id="saveRunBtn">記録を保存して終了</button><button class="wide" id="doneUndoBtn">↶ 最後のクリアを取り消す</button></div>
+    </div>
+  </div>
+</div>
+
+<dialog id="taskDialog">
+  <h2 id="dialogTitle">課題を追加</h2>
+  <form id="taskForm">
+    <div class="two"><label class="field">教科<select id="subject"><option>数学</option><option>英語</option><option>国語</option><option>物理</option><option>化学</option><option>地理</option><option>その他</option></select></label><label class="field">教材名<input id="book" placeholder="例：4STEP" required></label></div>
+    <label class="field">範囲・単元名<input id="name" placeholder="例：数学C" required></label>
+    <div class="two"><label class="field">開始番号<input id="start" type="number" inputmode="numeric" required></label><label class="field">終了番号<input id="end" type="number" inputmode="numeric" required></label></div>
+    <label class="field">次に解く番号（空欄なら開始番号）<input id="currentNo" type="number" inputmode="numeric"></label>
+    <div class="two"><label class="field">提出日<input id="due" type="date"></label><label class="field">提出時刻（任意）<input id="dueTime" type="time"></label></div>
+    <div class="two"><label class="field">目標完了日<input id="goal" type="date"></label><label class="field">目標時刻（任意）<input id="goalTime" type="time"></label></div>
+    <button type="button" class="link" id="clearDatesBtn">日付と時刻を消す</button>
+    <p class="muted">計画は目標完了日まで（未設定なら提出日まで）に、残りの問題を日ごとに割り振ります。</p>
+    <button type="button" class="wide" id="markClearBtn">✓ この課題をクリア済みにする</button>
+    <div class="actions"><button type="button" class="danger" id="deleteBtn">削除</button><button type="button" id="cancelBtn">キャンセル</button><button class="primary">保存</button></div>
   </form>
 </dialog>
+
+<dialog id="settingsDialog">
+  <h2>設定</h2>
+  <label class="field">見た目<select id="themeSelect"><option value="auto">自動（夜18時〜朝6時は暗め）</option><option value="light">いつも明るい</option><option value="dark">いつも暗い</option></select></label>
+  <div class="muted" id="cloudStatus"></div><h3>クラウドの課題データ</h3>
+  <div class="two"><button id="cloudSaveBtn">保存する</button><button id="cloudLoadBtn">読み込む</button></div>
+  <h3>クラウド接続</h3>
+  <label class="field">Cloudflare Worker URL<input id="workerUrl" type="url" placeholder="https://study-tracker-api.example.workers.dev"></label>
+  <label class="field">アクセスキー（WorkerのAPI_TOKEN）<input id="cloudToken" type="password"></label>
+  <button class="wide" id="cloudConnectBtn">接続設定を保存</button>
+  <h3>バックアップ</h3>
+  <button class="wide" id="exportBtn">課題データをファイルに書き出す</button>
+  <p class="muted">課題データはこのブラウザに自動保存されます。タイマーの記録はクラウドには保存されません。</p>
+  <div class="actions"><button id="closeSettingsBtn">閉じる</button></div>
+</dialog>
+<div id="toast" role="status" hidden></div>
+
 <script>
-const KEY='study-task-tracker-v1';
+const KEY='study-task-tracker-v1',CLOUD_KEY='study-task-cloud-config-v1',DIRTY_KEY='study-task-dirty-v1';
+const PLAN_KEY='study-timer-plan-v2',OLD_PLAN_KEY='study-timer-plan-v1',RUN_KEY='study-timer-run-v2',HISTORY_KEY='study-timer-history-v1';
+const $=id=>document.getElementById(id);
+function readStore(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
+function writeStore(k,v){try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
 const initial=[
  {id:1,subject:'数学',book:'4STEP',name:'数学C',start:213,end:302,current:223},
  {id:2,subject:'数学',book:'4STEP',name:'数学Ⅲ',start:1,end:132,current:8}
 ];
-let tasks;
-try{const stored=localStorage.getItem(KEY);tasks=stored?JSON.parse(stored):initial}catch{tasks=initial}
-let active='すべて',editingId=null;
-const subjects=['すべて','数学','英語','国語','理科','社会','情報','その他'];
-const $=id=>document.getElementById(id);
-const CLOUD_KEY='study-task-cloud-config-v1';
-let cloudConfig={url:'',token:''};
-try{cloudConfig=JSON.parse(localStorage.getItem(CLOUD_KEY))||cloudConfig}catch{}
-function setCloudStatus(message,isError=false){const el=$('cloudStatus');if(el){el.textContent=message;el.style.color=isError?'var(--red)':'var(--muted)'}}
-function save(){localStorage.setItem(KEY,JSON.stringify(tasks));setCloudStatus('端末内に保存済み。ほかの端末へ反映するには「クラウドへ保存」を押してください。')}
-function cloudReady(){return !!(cloudConfig.url&&cloudConfig.token)}
+let tasks=readStore(KEY,initial),cloudConfig=readStore(CLOUD_KEY,{url:'',token:''}),dirty=readStore(DIRTY_KEY,false);
+let active='すべて',editingId=null,view='list',listMode='list',openId=null,month=new Date(),selected='',ticker=null,toastTimer=null,lastPress=0,wakeLock=null;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const findTask=id=>tasks.find(t=>t.id==id);
+function calc(t){const total=Math.max(0,t.end-t.start+1),done=Math.min(total,Math.max(0,t.current-t.start));return{total,done,remaining:total-done,rate:total?Math.round(done/total*100):0}}
+function toast(message,isError=false){const el=$('toast');el.textContent=message;el.className=isError?'error':'';el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,3500)}
+
+/* ---------- 保存・クラウド ---------- */
+const cloudReady=()=>!!(cloudConfig.url&&cloudConfig.token);
+function setDirty(v){dirty=v;writeStore(DIRTY_KEY,v);$('syncBar').hidden=!(dirty&&cloudReady())}
+function save(){if(!writeStore(KEY,tasks))toast('この端末に保存できませんでした。',true);setDirty(true)}
+function setCloudStatus(message){$('cloudStatus').textContent=message}
 async function cloudRequest(method,body){
- if(!cloudReady())throw new Error('先に「接続設定」でWorker URLとアクセスキーを登録してください。');
- const url=cloudConfig.url.replace(/\/$/,'')+'/api/tasks';
- const response=await fetch(url,{method,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ if(!cloudReady())throw new Error('先にWorker URLとアクセスキーを登録してください。');
+ const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
  const data=await response.json().catch(()=>({}));
  if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
  return data;
 }
-async function saveToCloud(){
- try{$('cloudSaveBtn').disabled=true;setCloudStatus('クラウドへ保存中…');await cloudRequest('PUT',{tasks});setCloudStatus('☁ クラウドに保存しました。ほかの端末からも読み込めます。')}
- catch(e){setCloudStatus('保存できませんでした：'+e.message,true);alert('クラウド保存エラー\n'+e.message)}
- finally{$('cloudSaveBtn').disabled=false}
+async function cloudAction(button,work){button.disabled=true;setCloudStatus('通信中…');
+ try{const message=await work();setCloudStatus(message);toast(message)}
+ catch(e){setCloudStatus('失敗しました：'+e.message);toast('クラウド通信に失敗しました：'+e.message,true);alert('クラウド通信エラー\n'+e.message)}
+ finally{button.disabled=false}}
+const saveToCloud=button=>cloudAction(button,async()=>{const sent=JSON.stringify(tasks);await cloudRequest('PUT',{tasks});if(sent===JSON.stringify(tasks))setDirty(false);return'クラウドに保存しました。'});
+const loadFromCloud=button=>cloudAction(button,async()=>{const data=await cloudRequest('GET');if(!Array.isArray(data.tasks))throw new Error('クラウドに課題データがありません。先に保存してください。');
+ if(!confirm('この端末の課題データをクラウドの内容で置き換えます。よろしいですか？'))return'読み込みをキャンセルしました。';
+ tasks=data.tasks;save();setDirty(false);showView(view);return'クラウドから読み込みました。'});
+
+/* ---------- 日付と計画 ---------- */
+const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+function pad2(n){return String(n).padStart(2,'0')}
+const toDate=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const today=()=>ymd(new Date());
+const addDays=(s,n)=>{const d=toDate(s);d.setDate(d.getDate()+n);return ymd(d)};
+const daysBetween=(a,b)=>Math.round((toDate(b)-toDate(a))/86400000);
+const shortDate=(s,time)=>{const d=toDate(s);return`${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})${time?' '+time:''}`};
+const activeTasks=()=>tasks.filter(t=>!t.cleared);
+const label=t=>`${t.book} ${t.name}`;
+/* その日の最初の位置を覚えておく（今日の目標数が途中で変わらないように） */
+function setCurrent(t,v){const d=today();if(t.day?.date!==d)t.day={date:d,from:t.current};t.current=v}
+const dayStart=t=>Math.max(t.start,t.day?.date===today()?Math.min(t.day.from,t.current):t.current);
+/* 目標日（過ぎていれば提出日）までの日に、残りの問題を割り振る */
+function makePlan(t){const now=today(),days=new Map(),base=dayStart(t),total=t.end-base+1;
+ const limit=[t.goal,t.due].find(d=>d&&d>=now),late=!limit&&!!(t.goal||t.due);
+ if(total<=0||(!limit&&!late))return{days,short:0,late:false};
+ const span=late?1:Math.min(1000,daysBetween(now,limit)+1),list=Array.from({length:span},(_,i)=>addDays(now,i));
+ const fixed=d=>late?undefined:t.manual?.[d];
+ let rest=Math.max(0,total-list.reduce((a,d)=>a+(fixed(d)??0),0)),free=list.filter(d=>fixed(d)===undefined).length,pos=base;
+ for(const d of list){let q=fixed(d);const manual=q!==undefined;if(!manual){q=Math.ceil(rest/free);rest-=q;free--}
+  q=Math.max(0,Math.min(q,t.end-pos+1));days.set(d,{count:q,from:pos,to:pos+q-1,manual});pos+=q}
+ return{days,short:t.end-pos+1,late}}
+function todayInfo(t){const p=makePlan(t).days.get(today());if(!p)return null;return{...p,done:Math.max(0,Math.min(p.count,t.current-p.from))}}
+function deadline(t){const now=today(),d=t.due||t.goal;if(!d)return{text:'期限なし',cls:''};
+ const n=daysBetween(now,d),time=t.due?t.dueTime:t.goalTime,kind=t.due?'提出':'目標';
+ const passed=n<0||(n===0&&time&&time<new Date().toTimeString().slice(0,5));
+ return{text:passed?`${kind}期限切れ`:n===0?`今日${kind}${time?' '+time:''}`:`${kind}まで${n}日`,cls:passed||n<=2?'urgent':n<=7?'soon':''}}
+const rangeText=p=>p.count>1?`${p.from}〜${p.to}番`:`${p.from}番`;
+
+/* ---------- 一覧（見る） ---------- */
+const CATEGORIES=['数学','英語','国語','物理','化学','地理','その他'];
+/* 教科ごとに見出しを付けて並べる（一覧にない教科名は「その他」） */
+const groupOf=t=>CATEGORIES.includes(t.subject)?t.subject:'その他';
+function bySubject(items,note,card){return CATEGORIES.map(c=>{const group=items.filter(t=>groupOf(t)===c);return group.length?`<section class="subject" data-s="${c}"><h2><span>${c}</span><small>${note(group)}</small></h2><div class="list">${group.map(card).join('')}</div></section>`:''}).join('')}
+function renderList(){
+ const calendar=listMode==='calendar';
+ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===listMode));
+ $('listPane').hidden=calendar;$('calendarPane').hidden=!calendar;
+ $('syncBar').hidden=!(dirty&&cloudReady());
+ if(calendar){renderCalendar();return}
+ const list=activeTasks(),infos=new Map(list.map(t=>[t.id,todayInfo(t)]));
+ const goal=[...infos.values()].reduce((a,p)=>a+(p?.count||0),0),done=[...infos.values()].reduce((a,p)=>a+(p?.done||0),0);
+ const remaining=list.reduce((a,t)=>a+calc(t).remaining,0);
+ $('summaryCard').innerHTML=goal?`<div class="summary-line"><span>今日の目標 <strong>${done} / ${goal}問</strong></span><span class="muted">全残り ${remaining}問</span></div><div class="bar"><div class="fill" style="width:${done/goal*100}%"></div></div>`:`<div class="summary-line" style="margin:0"><span>残り <strong>${remaining}問</strong></span><span class="muted">期限を設定すると今日の目標が出ます</span></div>`;
+ const cats=CATEGORIES.filter(c=>list.some(t=>groupOf(t)===c));
+ if(!cats.includes(active))active='すべて';
+ $('tabs').hidden=cats.length<2;
+ $('tabs').innerHTML=['すべて',...cats].map(c=>`<button class="${active===c?'active':''}" data-tab="${c}">${c}</button>`).join('');
+ /* 完了したもの、期限が近いものの順 */
+ const key=t=>(t.current>t.end?'0':'1')+(t.due||t.goal||'9999')+(t.dueTime||'99');
+ const shown=list.filter(t=>active==='すべて'||groupOf(t)===active).sort((a,b)=>key(a).localeCompare(key(b)));
+ const note=group=>{const sum=f=>group.reduce((a,t)=>a+f(t),0),goal=sum(t=>infos.get(t.id)?.count||0);return`残り${sum(t=>calc(t).remaining)}問${goal?`・今日 ${sum(t=>infos.get(t.id)?.done||0)}/${goal}問`:''}`};
+ $('taskList').innerHTML=shown.length?bySubject(shown,note,t=>{const c=calc(t),finished=t.current>t.end,p=infos.get(t.id),d=deadline(t),open=openId===t.id;
+  return`<article class="item ${finished?'finished':''}" data-s="${groupOf(t)}"><div class="item-main"><button class="item-info" data-open="${t.id}" aria-expanded="${open}"><span class="item-top">${t.subject===groupOf(t)?'':`<span class="tag">${esc(t.subject)}</span>`}<span class="item-name">${esc(label(t))}</span></span><span class="item-sub">${finished?'<b>全部終わりました</b>':`<b>次 ${Math.max(t.start,t.current)}番</b><span>残り${c.remaining}</span>`}<span class="due ${finished?'':d.cls}">${finished?'':d.text}</span></span><span class="bar thin"><span class="fill" style="width:${c.rate}%"></span></span>${p&&!finished?`<span class="today ${p.done>=p.count?'ok':''}">${p.count?(p.done>=p.count?`✓ 今日の分 ${p.count}問 完了`:`今日 ${p.done}/${p.count}問（${rangeText(p)}）`):'今日はお休み'}</span>`:''}</button>${finished?`<button class="clear-btn" data-clear="${t.id}">✓ クリア</button>`:`<button class="plus" data-step="1" data-id="${t.id}" aria-label="${esc(label(t))}を1問進める">＋1</button>`}</div>${open?`<div class="item-more"><div class="muted">範囲 ${t.start}〜${t.end}・達成 ${c.rate}%${t.due?`<br>提出日 ${shortDate(t.due,t.dueTime)}`:''}${t.goal?`<br>目標完了 ${shortDate(t.goal,t.goalTime)}`:''}</div><div class="two"><button data-step="-1" data-id="${t.id}" ${t.current<=t.start?'disabled':''}>−1 戻す</button><button class="primary" data-timer="${t.id}" ${finished?'disabled':''}>⏱ タイマー</button></div></div>`:''}</article>`}):`<div class="empty">進行中の課題はありません。<br><button class="primary" data-add>＋ 課題を追加</button></div>`;
 }
-async function loadFromCloud(){
- try{$('cloudLoadBtn').disabled=true;setCloudStatus('クラウドから読み込み中…');const data=await cloudRequest('GET');if(!Array.isArray(data.tasks))throw new Error('クラウドに課題データがありません。先に保存してください。');if(!confirm('この端末の課題データをクラウドの内容で置き換えます。よろしいですか？')){setCloudStatus('読み込みをキャンセルしました。');return}tasks=data.tasks;save();render();setCloudStatus('☁ クラウドから読み込みました。')}
- catch(e){setCloudStatus('読み込めませんでした：'+e.message,true);alert('クラウド読込エラー\n'+e.message)}
- finally{$('cloudLoadBtn').disabled=false}
+function renderCalendar(){
+ const now=today(),list=activeTasks(),plans=list.map(t=>({t,...makePlan(t)}));
+ const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate();
+ $('monthLabel').textContent=`${y}年${m+1}月`;
+ let cells='日月火水木金土'.split('').map(w=>`<div class="week">${w}</div>`).join('')+'<div></div>'.repeat(first);
+ for(let n=1;n<=last;n++){const d=ymd(new Date(y,m,n)),count=plans.reduce((a,p)=>a+(p.days.get(d)?.count||0),0),due=list.some(t=>t.due===d),goal=list.some(t=>t.goal===d);
+  cells+=`<button class="day ${d===now?'is-today':''} ${d===selected?'selected':''} ${d<now?'past':''}" data-day="${d}" aria-label="${shortDate(d)} ${count}問${due?' 提出日':''}${goal?' 目標日':''}"><span>${n}</span><em>${count?count+'問':''}</em><i>${due?'<u class="m-due">提</u>':''}${goal?'<u class="m-goal">目</u>':''}</i></button>`}
+ $('calendar').innerHTML=cells;
+ const events=list.flatMap(t=>[t.due===selected?`<div class="event"><u class="m-due">提</u>${esc(label(t))} ${t.dueTime||''}</div>`:'',t.goal===selected?`<div class="event"><u class="m-goal">目</u>${esc(label(t))} ${t.goalTime||''}</div>`:'']).join('');
+ const rows=plans.filter(p=>p.days.has(selected)).map(({t,days,late})=>{const p=days.get(selected);return`<div class="plan-line"><div><b>${esc(label(t))}</b><span class="muted">${p.count?rangeText(p):'お休み'}${p.manual?'・手動':''}${late?'・期限切れ':''}</span></div>${late?`<span>${p.count}問</span>`:`<input type="number" inputmode="numeric" min="0" value="${p.count}" data-manual="${t.id}" aria-label="${esc(label(t))}のこの日の問題数">問${p.manual?`<button class="link" data-auto="${t.id}">自動</button>`:''}`}</div>`}).join('');
+ const warnings=plans.filter(p=>p.short>0).map(p=>`<div class="warning">${esc(label(p.t))}：この計画だと期限までに ${p.short}問 残ります</div>`).join('');
+ const undated=list.filter(t=>!t.due&&!t.goal&&t.current<=t.end).length;
+ $('dayDetail').innerHTML=`<h2>${shortDate(selected)}${selected===now?' 今日':''}</h2>${events}${rows||'<div class="muted">この日の予定はありません。</div>'}${rows&&selected>=now?'<div class="muted" style="margin-top:8px">問題数を書き換えると、残りは他の日に自動で配り直されます（0で休み）。</div>':''}${warnings}${undated?`<div class="muted" style="margin-top:8px">期限のない課題が${undated}件あります。「編集」タブで日付を設定すると計画に入ります。</div>`:''}`;
 }
-function calc(t){const total=Math.max(0,t.end-t.start+1),done=Math.min(total,Math.max(0,t.current-t.start));return{total,done,remaining:total-done,rate:total?Math.round(done/total*100):0}}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){
- const all=tasks.map(t=>({...t,...calc(t)}));
- const total=all.reduce((a,t)=>a+t.total,0),done=all.reduce((a,t)=>a+t.done,0),remaining=all.reduce((a,t)=>a+t.remaining,0);
- $('totalTasks').innerHTML=`${tasks.length}<small> 件</small>`;$('remainingTotal').innerHTML=`${remaining.toLocaleString()}<small> 個</small>`;$('overallRate').innerHTML=`${total?Math.round(done/total*100):0}<small> %</small>`;
- $('tabs').innerHTML=subjects.map(s=>`<button class="tab ${active===s?'active':''}" data-tab="${s}">${s}</button>`).join('');
- document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;render()});
- const shown=all.filter(t=>active==='すべて'||(active==='理科'?['物理','化学','生物','地学'].includes(t.subject):t.subject===active));
- $('listCaption').textContent=`${active}の課題 · ${shown.length}件`;
- if(!shown.length){$('taskList').innerHTML='<div class="empty"><strong>まだ課題がありません</strong>「課題を追加」から最初の課題を登録しよう。</div>';return}
- const groups=[];const map=new Map();
- shown.forEach(t=>{const key=t.subject+'__'+t.book;if(!map.has(key)){const g={subject:t.subject,book:t.book,items:[]};map.set(key,g);groups.push(g)}map.get(key).items.push(t)});
- $('taskList').innerHTML=groups.map(g=>`<section class="group"><div class="group-head"><div><div class="group-name">${esc(g.subject)} - ${esc(g.book)}</div><div class="group-meta">${g.items.length}つの課題</div></div><div class="group-meta">${g.items.reduce((a,t)=>a+t.remaining,0)} 個残り</div></div>${g.items.map(t=>`<article class="task"><div class="task-top"><div class="task-main"><div class="task-name">${esc(t.name)}</div><div class="task-range">${t.start}〜${t.end} · 現在 ${t.current>t.end?t.end+1:t.current}</div><div class="metrics"><span>残り <strong>${t.remaining}</strong></span><span class="percent">${t.rate}%</span><span class="current-edit">番号変更 <input aria-label="${esc(t.name)}の現在" type="number" min="${t.start}" max="${t.end+1}" value="${Math.min(t.end+1,Math.max(t.start,t.current))}" data-current="${t.id}"></span></div></div><div class="task-progress"><div class="progress-line"><div class="progress-fill" style="width:${t.rate}%"></div></div></div><div class="task-controls"><button class="advance" data-advance="${t.id}" ${t.current>t.end?'disabled':''}>＋1問</button><button class="reverse" data-reverse="${t.id}" ${t.current<=t.start?"disabled":""}>−1問</button><button class="mini" data-edit="${t.id}">編集</button><button class="mini" data-delete="${t.id}">削除</button></div></div></article>`).join('')}</section>`).join('');
- document.querySelectorAll('[data-advance]').forEach(button=>button.onclick=()=>{const t=tasks.find(x=>x.id==button.dataset.advance);if(!t||t.current>t.end)return;t.current=Math.min(t.end+1,t.current+1);save();render()});
- document.querySelectorAll('[data-reverse]').forEach(button=>button.onclick=()=>{const t=tasks.find(x=>x.id==button.dataset.reverse);if(!t||t.current<=t.start)return;t.current=Math.max(t.start,t.current-1);save();render()});
- document.querySelectorAll('[data-current]').forEach(input=>input.addEventListener('change',()=>{const t=tasks.find(x=>x.id==input.dataset.current);if(!t)return;let v=Number(input.value);if(!Number.isFinite(v))v=t.start;t.current=Math.max(t.start,Math.min(t.end+1,v));save();render()}));
- document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEdit(Number(b.dataset.edit)));
- document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{const t=tasks.find(x=>x.id==b.dataset.delete);if(t&&confirm(`「${t.name}」を削除しますか？`)){tasks=tasks.filter(x=>x.id!==t.id);save();render()}});
+$('modes').onclick=e=>{const b=e.target.closest('[data-mode]');if(b){listMode=b.dataset.mode;if(listMode==='calendar'){selected=today();month=toDate(selected);month.setDate(1)}renderList()}};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b){active=b.dataset.tab;renderList()}};
+$('prevMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);renderCalendar()};
+$('nextMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);renderCalendar()};
+$('calendar').onclick=e=>{const b=e.target.closest('[data-day]');if(b){selected=b.dataset.day;renderCalendar()}};
+$('dayDetail').onchange=e=>{const el=e.target,t=findTask(el.dataset.manual);if(!t)return;const v=Math.floor(Number(el.value));
+ if(el.value!==''&&v>=0){t.manual={...t.manual,[selected]:v};Object.keys(t.manual).forEach(d=>{if(d<today())delete t.manual[d]});save()}renderCalendar()};
+$('dayDetail').onclick=e=>{const b=e.target.closest('[data-auto]');if(b){const t=findTask(b.dataset.auto);delete t.manual[selected];save();renderCalendar()}};
+$('taskList').onclick=e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+ if(d.add!==undefined)openEdit();
+ else if(d.open){const id=Number(d.open);openId=openId===id?null:id;renderList()}
+ else if(d.step){const t=findTask(d.id);setCurrent(t,Math.max(t.start,Math.min(t.end+1,t.current+Number(d.step))));save();renderList()}
+ else if(d.clear)clearTask(findTask(d.clear));
+ else if(d.timer){if(run)toast('計測中のタイマーがあります。');else{const t=findTask(d.timer),p=todayInfo(t),block=newBlock(t);if(p&&p.count>p.done)block.count=p.count-p.done;plan.blocks=[block];savePlan()}showView('timer');window.scrollTo(0,0)}};
+function clearTask(t){t.cleared=today();save();showView(view);toast(`「${t.name}」をクリアしました🎉（編集タブから戻せます）`)}
+
+/* ---------- 編集 ---------- */
+function renderEdit(){
+ const row=(t,buttons,sub)=>`<div class="edit-row" data-s="${groupOf(t)}"><div><b>${esc(label(t))}</b><span class="muted">${esc(t.subject)}・${sub}</span></div>${buttons}</div>`;
+ const doing=activeTasks(),cleared=tasks.filter(t=>t.cleared);
+ $('editList').innerHTML=doing.length?bySubject(doing,group=>`${group.length}件`,t=>row(t,`<button data-edit="${t.id}">編集</button>`,`${t.start}〜${t.end}・次 ${t.current}<br>提出 ${t.due?shortDate(t.due,t.dueTime):'未設定'}／目標 ${t.goal?shortDate(t.goal,t.goalTime):'未設定'}`)):'<div class="empty">進行中の課題はありません。</div>';
+ $('clearedCard').hidden=!cleared.length;$('clearedCount').textContent=`クリア済み（${cleared.length}件）`;
+ $('clearedList').innerHTML=cleared.map(t=>row(t,`<button data-restore="${t.id}">戻す</button><button class="danger" data-delete="${t.id}">削除</button>`,`${shortDate(t.cleared)} クリア`)).join('');
 }
-function openEdit(id=null){editingId=id;const t=tasks.find(x=>x.id===id);$('dialogTitle').textContent=t?'課題を編集':'課題を追加';$('subject').value=t?.subject||'数学';$('book').value=t?.book||'';$('name').value=t?.name||'';$('start').value=t?.start??1;$('end').value=t?.end??100;$('current').value=t?.current??1;$('taskDialog').showModal()}
+function removeTask(t){if(!t||!confirm(`「${t.name}」を削除しますか？`))return false;tasks=tasks.filter(x=>x!==t);save();return true}
+$('editView').onclick=e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+ if(d.edit)openEdit(d.edit);else if(d.restore){delete findTask(d.restore).cleared;save();renderEdit()}else if(d.delete){if(removeTask(findTask(d.delete)))renderEdit()}};
+const DATE_FIELDS=['due','dueTime','goal','goalTime'];
+function openEdit(id=null){const t=id===null?null:findTask(id);editingId=t?t.id:null;$('dialogTitle').textContent=t?'課題を編集':'課題を追加';$('deleteBtn').hidden=$('markClearBtn').hidden=!t;
+ const select=$('subject');select.querySelectorAll('[data-old]').forEach(o=>o.remove());if(t&&!CATEGORIES.includes(t.subject)){const o=new Option(t.subject,t.subject);o.dataset.old='';select.add(o)}select.value=t?.subject||'数学';$('book').value=t?.book||'';$('name').value=t?.name||'';$('start').value=t?.start??1;$('end').value=t?.end??100;$('currentNo').value=t?.current??'';
+ DATE_FIELDS.forEach(k=>$(k).value=t?.[k]||'');$('taskDialog').showModal()}
 $('addBtn').onclick=()=>openEdit();$('cancelBtn').onclick=()=>$('taskDialog').close();
-$('taskForm').onsubmit=e=>{e.preventDefault();const start=Number($('start').value),end=Number($('end').value),current=Number($('current').value);if(end<start){alert('終了番号は開始番号以上にしてください。');return}if(current<start||current>end+1){alert(`現在は${start}〜${end+1}の範囲で入力してください。`);return}
- const item={id:editingId??Date.now(),subject:$('subject').value,book:$('book').value.trim(),name:$('name').value.trim(),start,end,current};
- if(editingId!==null)tasks=tasks.map(t=>t.id===editingId?item:t);else tasks.push(item);save();$('taskDialog').close();render()};
-$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();URL.revokeObjectURL(url)};
-$('cloudSettingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;$('cloudDialog').showModal()};
-$('cloudCancelBtn').onclick=()=>$('cloudDialog').close();
-$('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,'');const token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token};localStorage.setItem(CLOUD_KEY,JSON.stringify(cloudConfig));$('cloudDialog').close();setCloudStatus('接続設定を保存しました。クラウドへ保存／クラウドから読込が使えます。')};
-$('cloudSaveBtn').onclick=saveToCloud;
-$('cloudLoadBtn').onclick=loadFromCloud;
-if(cloudReady())setCloudStatus('接続設定済み。変更後は「クラウドへ保存」を押すと他の端末に反映されます。');
-render();
+$('clearDatesBtn').onclick=()=>DATE_FIELDS.forEach(k=>$(k).value='');
+$('deleteBtn').onclick=()=>{if(removeTask(findTask(editingId))){$('taskDialog').close();showView(view)}};
+$('markClearBtn').onclick=()=>{const t=findTask(editingId);if(!t)return;if(t.current<=t.end&&!confirm(`まだ ${calc(t).remaining}問 残っています。クリア済みにしますか？`))return;$('taskDialog').close();clearTask(t)};
+$('taskForm').onsubmit=e=>{e.preventDefault();const start=Number($('start').value),end=Number($('end').value),current=$('currentNo').value===''?start:Number($('currentNo').value);
+ if(end<start){alert('終了番号は開始番号以上にしてください。');return}if(current<start||current>end+1){alert(`次に解く番号は${start}〜${end+1}で入力してください（${end+1}は完了）。`);return}
+ const old=editingId===null?null:findTask(editingId),item={...old,id:old?old.id:Date.now(),subject:$('subject').value,book:$('book').value.trim(),name:$('name').value.trim(),start,end,current};
+ DATE_FIELDS.forEach(k=>{if($(k).value)item[k]=$(k).value;else delete item[k]});
+ if(!item.due)delete item.dueTime;if(!item.goal)delete item.goalTime;
+ if(item.due&&item.goal&&(item.goal+(item.goalTime||'00:00'))>(item.due+(item.dueTime||'23:59'))){alert('目標完了日時は、提出日時より前にしてください。');return}
+ /* 番号を直接直したときは、今日の記録をやり直す */
+ if(old&&old.current!==current)delete item.day;
+ if(!old){tasks.push(item);active='すべて'}else tasks=tasks.map(t=>t===old?item:t);save();$('taskDialog').close();showView(view)};
+
+/* ---------- タイマーの準備 ---------- */
+const pad=n=>String(n).padStart(2,'0');
+function fmt(ms,cs=true){const c=Math.floor(Math.abs(ms)/10),s=Math.floor(c/100),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?`${h}:${pad(m)}`:`${m}`)+`:${pad(s%60)}`+(cs?`.${pad(c%100)}`:'')}
+const fmtDiff=d=>(d>0?'+':d<0?'-':'±')+fmt(d),diffClass=d=>d>0?'behind':'ahead';
+const cumulative=list=>{let sum=0;return list.map(x=>sum+=x.target)};
+/* 以前の版の「区間」形式を、1問ずつの形式にする */
+const flatten=list=>list.flatMap(s=>s.from===undefined?[s]:Array.from({length:s.to-s.from+1},(_,i)=>({taskId:s.taskId,label:s.label,no:s.from+i,target:s.each?.[i]??Math.round(s.target/(s.to-s.from+1))})));
+function loadPlan(){const p=readStore(PLAN_KEY,null);if(p)return p;const np={base:300000,times:{},blocks:[]};
+ const old=readStore(OLD_PLAN_KEY,[]);for(const s of old){np.blocks.push({taskId:s.taskId,from:s.from,count:s.to-s.from+1});flatten([s]).forEach(x=>np.times[`${x.taskId}:${x.no}`]=x.target)}return np}
+let plan=loadPlan(),run=readStore(RUN_KEY,null),runHistory=readStore(HISTORY_KEY,[]);
+const savePlan=()=>writeStore(PLAN_KEY,plan);
+const newBlock=(t,from=null)=>({taskId:t.id,from,count:5});
+const timeOf=(id,no)=>plan.times[`${id}:${no}`]??plan.base;
+/* from が null の間は、課題の「次の番号」に追従する */
+function range(b){const t=findTask(b.taskId),from=Math.min(t.end,Math.max(t.start,b.from??t.current)),count=Math.max(1,Math.min(b.count,t.end-from+1,100));return{t,from,count}}
+function planItems(){return plan.blocks.flatMap(b=>{const{t,from,count}=range(b);return Array.from({length:count},(_,i)=>({taskId:t.id,label:`${t.book} ${t.name}`,no:from+i,target:timeOf(t.id,from+i)}))})}
+function timeInputs(ms){const s=Math.round(ms/1000);return[Math.floor(s/60),s%60]}
+function problemRows(b){const{t,from,count}=range(b);return Array.from({length:count},(_,i)=>{const no=from+i,[m,s]=timeInputs(timeOf(t.id,no));return`<div class="problem-row ${plan.times[`${t.id}:${no}`]===undefined?'':'custom'}" data-no="${no}"><b>${no}番</b><input type="number" inputmode="numeric" min="0" value="${m}" aria-label="${no}番の分">分<input type="number" inputmode="numeric" min="0" value="${s}" aria-label="${no}番の秒">秒</div>`}).join('')}
+function renderSetup(){
+ plan.blocks=plan.blocks.filter(b=>findTask(b.taskId)&&!findTask(b.taskId).cleared);
+ if(!plan.blocks.length){const t=activeTasks().find(t=>t.current<=t.end)||activeTasks()[0];if(t)plan.blocks=[newBlock(t)]}
+ savePlan();
+ $('blocks').innerHTML=plan.blocks.map((b,i)=>{const{from,count}=range(b);return`<div class="card block" data-block="${i}"><label class="field">やる課題<select data-key="taskId">${activeTasks().map(t=>`<option value="${t.id}" ${t.id==b.taskId?'selected':''}>${esc(t.subject)} ${esc(t.book)}｜${esc(t.name)}</option>`).join('')}</select></label><div class="row"><input type="number" inputmode="numeric" data-key="from" value="${from}" aria-label="開始番号">番から<input type="number" inputmode="numeric" data-key="count" value="${count}" aria-label="問題数">問</div><div class="row chips">${[1,3,5,10].map(n=>`<button data-count="${n}">${n}問</button>`).join('')}${i?'<button class="link" data-remove>この課題を外す</button>':''}</div><div class="problems">${problemRows(b)}</div></div>`}).join('')||'<div class="empty">先に課題を追加してください。</div>';
+ $('addBlockBtn').hidden=!activeTasks().length;
+ [$('baseMin').value,$('baseSec').value]=timeInputs(plan.base);
+ renderTotal();renderHistory()}
+function renderTotal(){const items=planItems();$('planCount').textContent=`${items.length}問・目標`;$('planTotal').textContent=fmt(cumulative(items).at(-1)||0,false);$('startBtn').disabled=!items.length}
+/* 入力中のフォーカスを保つため、変わった部分だけを書き換える */
+function updateBlock(card){const b=plan.blocks[card.dataset.block],{from,count}=range(b);card.querySelector('[data-key="from"]').value=from;card.querySelector('[data-key="count"]').value=count;card.querySelector('.problems').innerHTML=problemRows(b);savePlan();renderTotal()}
+$('blocks').onchange=e=>{const el=e.target,card=el.closest('[data-block]'),b=plan.blocks[card.dataset.block],row=el.closest('[data-no]');
+ if(el.dataset.key==='taskId'){Object.assign(b,newBlock(findTask(el.value)));savePlan();renderSetup()}
+ else if(el.dataset.key){const v=Math.floor(Number(el.value));if(el.dataset.key==='from')b.from=el.value===''?null:v;else b.count=v>0?v:1;updateBlock(card)}
+ else if(row){const[m,s]=row.querySelectorAll('input'),sec=Math.round(Number(m.value||0)*60+Number(s.value||0)),key=`${b.taskId}:${row.dataset.no}`;
+  if(sec>=1){plan.times[key]=sec*1000;row.classList.add('custom')}else toast('時間は1秒以上にしてください。',true);
+  [m.value,s.value]=timeInputs(timeOf(b.taskId,row.dataset.no));savePlan();renderTotal()}};
+$('blocks').onclick=e=>{const el=e.target.closest('button');if(!el)return;const card=el.closest('[data-block]');
+ if(el.dataset.count){plan.blocks[card.dataset.block].count=Number(el.dataset.count);updateBlock(card)}else{plan.blocks.splice(card.dataset.block,1);renderSetup()}};
+$('blocks').addEventListener('focusin',e=>{if(e.target.matches('input'))e.target.select()});
+$('addBlockBtn').onclick=()=>{const used=plan.blocks.map(b=>b.taskId),t=activeTasks().find(t=>!used.includes(t.id)&&t.current<=t.end);
+ if(t)plan.blocks.push(newBlock(t));else if(plan.blocks.length){const b=plan.blocks.at(-1),r=range(b);plan.blocks.push(newBlock(r.t,r.from+r.count))}renderSetup()};
+$('baseMin').onchange=$('baseSec').onchange=()=>{const sec=Math.round(Number($('baseMin').value||0)*60+Number($('baseSec').value||0));if(sec>=1)plan.base=sec*1000;else toast('時間は1秒以上にしてください。',true);savePlan();renderSetup()};
+$('resetTimesBtn').onclick=()=>{if(confirm('個別に変えた時間をすべて基本時間に戻しますか？')){plan.times={};renderSetup()}};
+function renderHistory(){$('historyCard').hidden=!runHistory.length;
+ $('historyList').innerHTML=runHistory.map(h=>`<div class="history-row"><span>${esc(h.title)}<br><span class="muted">${new Date(h.date).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}・${h.count}問</span></span><span style="text-align:right;white-space:nowrap">${fmt(h.total)}<br><span class="${diffClass(h.total-h.target)}">${fmtDiff(h.total-h.target)}</span></span></div>`).join('')}
+
+/* ---------- 計測 ---------- */
+const index=()=>run.times.length,isDone=()=>index()>=run.items.length;
+const elapsed=()=>Math.floor((run.base+(run.since?Math.max(0,Date.now()-run.since):0))/10)*10;
+const saveRunState=()=>writeStore(RUN_KEY,run);
+function startRun(){const items=planItems();if(!items.length)return;run={items,times:[],stack:[],base:0,since:Date.now(),date:Date.now()};saveRunState();keepAwake();renderTimer()}
+function clearProblem(){if(!run||isDone()||!run.since)return;const now=Date.now();if(now-lastPress<300)return;lastPress=now;
+ const x=run.items[index()],t=findTask(x.taskId),before={taskId:x.taskId,current:t?.current,after:null};
+ /* 途中を飛ばした範囲は、完了扱いにしない */
+ if(t&&x.no<=t.current&&x.no+1>t.current&&x.no<=t.end){setCurrent(t,x.no+1);before.after=t.current;save()}
+ run.stack.push(before);run.times.push(elapsed());
+ if(isDone()){run.resume={base:run.base,since:run.since};run.base=run.times.at(-1);run.since=null;releaseAwake()}
+ saveRunState();renderRun()}
+function undoRun(){if(!run||!run.stack.length)return;const wasDone=isDone(),b=run.stack.pop(),t=findTask(b.taskId);
+ if(t&&b.after!==null&&t.current===b.after){setCurrent(t,b.current);save()}
+ run.times.pop();if(wasDone){Object.assign(run,run.resume);keepAwake()}saveRunState();renderRun()}
+function togglePause(){if(!run||isDone())return;if(run.since){run.base+=Math.max(0,Date.now()-run.since);run.since=null;releaseAwake()}else{run.since=Date.now();keepAwake()}saveRunState();renderRun()}
+function endRun(){run=null;saveRunState();releaseAwake();renderTimer();window.scrollTo(0,0)}
+function saveRun(){if(!run||!isDone())return;
+ runHistory.unshift({date:run.date,title:[...new Set(run.items.map(x=>x.label))].join(' → '),count:run.items.length,total:run.times.at(-1),target:cumulative(run.items).at(-1),times:run.times,plan:run.items});
+ runHistory=runHistory.slice(0,20);writeStore(HISTORY_KEY,runHistory);plan.blocks.forEach(b=>b.from=null);plan.blocks=plan.blocks.slice(0,1);savePlan();endRun()}
+function renderRun(){const cum=cumulative(run.items),done=isDone(),i=index(),many=new Set(run.items.map(x=>x.taskId)).size>1;
+ $('splitBody').innerHTML=run.items.map((x,j)=>{const time=run.times[j],d=time===undefined?null:time-cum[j];return`<tr class="${j===i?'now':''}"><td>${x.no}番<small>${many?esc(x.label):`目安 ${fmt(x.target,false)}`}</small></td><td>${fmt(cum[j])}</td><td>${d===null?'—':fmt(time)}</td><td ${j===i?'id="liveDiff"':''} class="${d===null?'':diffClass(d)}">${d===null?'':fmtDiff(d)}</td></tr>`}).join('');
+ $('current').hidden=$('runControls').hidden=done;$('result').hidden=$('doneControls').hidden=!done;
+ if(done){const d=run.times.at(-1)-cum.at(-1),good=run.items.filter((x,j)=>run.times[j]-(run.times[j-1]||0)<=x.target).length;
+  $('result').innerHTML=`<span class="${diffClass(d)}">${d>0?'完走！目標オーバー':'完走！目標達成'} ${fmtDiff(d)}</span><div class="muted">目安内でクリア：${good} / ${run.items.length}問</div>`}
+ else{$('clearBtn').textContent=run.since?`${run.items[i].no}番 クリア`:'一時停止中';$('clearBtn').disabled=!run.since;$('pauseBtn').textContent=run.since?'一時停止':'▶ 再開'}
+ $('undoBtn').disabled=!run.stack.length;tick();
+ const row=document.querySelector('tr.now'),box=$('splits');box.scrollTop=row?Math.max(0,row.offsetTop-box.clientHeight/2):box.scrollHeight}
+function tick(){if(!run)return;const cum=cumulative(run.items),clock=$('clock');
+ if(isDone()){const total=run.times.at(-1);clock.textContent=fmt(total);clock.className='clock '+(total>cum.at(-1)?'behind':'done');return}
+ const i=index(),x=run.items[i],now=elapsed(),diff=now-cum[i],spent=now-(run.times[i-1]||0),over=spent>x.target;
+ clock.textContent=fmt(now);clock.className='clock'+(!run.since?' paused':diff>0?' behind':'');
+ const live=$('liveDiff');live.textContent=diff>-60000?fmtDiff(diff):'';live.className=diffClass(diff);
+ $('nowName').textContent=`${x.no}番（${i+1}/${run.items.length}問目）`;$('nowTime').textContent=`${fmt(spent,false)} / ${fmt(x.target,false)}`;$('nowTime').className=over?'behind':'';
+ $('timeFill').style.width=`${Math.min(100,spent/x.target*100)}%`;$('timeFill').classList.toggle('over',over);
+ $('nowInfo').textContent=`${x.label}・`+(diff>0?`全体で ${fmt(diff,false)} 遅れ`:`あと ${fmt(Math.ceil(-diff/1000)*1000,false)} で解けば目標ペース`)}
+function renderTimer(){document.body.classList.toggle('running',view==='timer'&&!!run);$('setupPanel').hidden=!!run;$('runPanel').hidden=!run;clearInterval(ticker);
+ if(run){renderRun();ticker=setInterval(tick,31)}else renderSetup()}
+function showView(v){view=v;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('listView').hidden=v!=='list';$('editView').hidden=v!=='edit';$('timerView').hidden=v!=='timer';
+ if(v==='timer')renderTimer();else{clearInterval(ticker);document.body.classList.remove('running');v==='edit'?renderEdit():renderList()}}
+async function keepAwake(){try{if(navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null)}}catch{}}
+function releaseAwake(){try{wakeLock?.release()}catch{}wakeLock=null}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(run?.since)keepAwake();if(view==='list')renderList()});
+
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+$('startBtn').onclick=startRun;$('clearBtn').onclick=clearProblem;$('undoBtn').onclick=$('doneUndoBtn').onclick=undoRun;$('pauseBtn').onclick=togglePause;$('saveRunBtn').onclick=saveRun;
+$('quitBtn').onclick=()=>{if(confirm('タイマーをやめますか？\nこの回の記録は残りません。クリアした分の進捗は課題に残ります。'))endRun()};
+const SHORTCUTS={Space:clearProblem,Enter:clearProblem,ArrowRight:clearProblem,Backspace:undoRun,KeyP:togglePause};
+document.addEventListener('keydown',e=>{if(view!=='timer'||!run||e.ctrlKey||e.metaKey||e.altKey||!SHORTCUTS[e.code]||document.querySelector('dialog[open]'))return;e.preventDefault();if(!e.repeat)SHORTCUTS[e.code]()});
+document.addEventListener('keyup',e=>{if(view==='timer'&&run&&e.code==='Space')e.preventDefault()});
+
+/* ---------- 設定 ---------- */
+$('settingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;setCloudStatus(!cloudReady()?'クラウド未接続です。下で接続設定をしてください。':dirty?'クラウドに未保存の変更があります。':'接続設定済みです。');$('settingsDialog').showModal()};
+$('closeSettingsBtn').onclick=()=>$('settingsDialog').close();
+$('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,''),token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token};writeStore(CLOUD_KEY,cloudConfig);setCloudStatus('接続設定を保存しました。');$('syncBar').hidden=!dirty};
+$('cloudSaveBtn').onclick=()=>saveToCloud($('cloudSaveBtn'));$('syncBar').onclick=()=>saveToCloud($('syncBar'));$('cloudLoadBtn').onclick=()=>loadFromCloud($('cloudLoadBtn'));
+$('exportBtn').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+/* ---------- 見た目（時間帯） ---------- */
+const THEME_KEY='study-theme-v1';
+function applyLook(){const now=new Date(),h=now.getHours()+now.getMinutes()/60,night=h<6||h>=18,mode=readStore(THEME_KEY,'auto'),root=document.documentElement;
+ root.dataset.theme=mode==='dark'||(mode==='auto'&&night)?'dark':'light';
+ const time=night?'night':h<10?'morning':h<16?'day':'evening';root.dataset.time=time;
+ document.querySelector('meta[name="theme-color"]').content=root.dataset.theme==='dark'?'#232b3e':'#f2f5fa';
+ $('today').textContent=`${now.getMonth()+1}月${now.getDate()}日（${'日月火水木金土'[now.getDay()]}）`;
+ $('greeting').textContent={morning:'おはようございます',day:'こんにちは',evening:'おつかれさまです',night:'こんばんは'}[time];
+ /* 6〜18時は太陽、それ以外は月が左から右へ弧を描く */
+ const pos=((h+(night?6:-6))%24%12)/12;$('orb').style.left=`${45+pos*19}%`;$('orb').style.top=`${66-Math.sin(Math.PI*pos)*52}px`}
+$('themeSelect').value=readStore(THEME_KEY,'auto');$('themeSelect').onchange=e=>{writeStore(THEME_KEY,e.target.value);applyLook()};
+setInterval(applyLook,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)applyLook()});
+applyLook();
+showView(run?'timer':'list');
 </script>
 </body>
 </html>
