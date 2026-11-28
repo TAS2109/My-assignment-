@@ -24,7 +24,7 @@ header{position:relative;overflow:hidden;display:flex;align-items:flex-start;jus
 :root[data-time="night"] header{--sky1:#27336b;--sky2:#515a99;--sky-text:#fff;--orb:#fff1bd}
 .orb{position:absolute;width:34px;height:34px;border-radius:50%;background:var(--orb);box-shadow:0 0 22px 6px color-mix(in srgb,var(--orb) 55%,transparent);pointer-events:none}
 header>div,header>button{position:relative}h1{font-size:22px;margin:0 0 6px}header p{margin:0;font-size:13px;font-weight:600}header button{background:#ffffffc9;color:#1b2438;white-space:nowrap}
-.views{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--panel);box-shadow:var(--shadow);border-radius:16px;padding:5px;margin-bottom:14px}.views button{background:transparent;color:var(--muted);padding:8px 4px;white-space:nowrap;font-size:14px}.views button.active{background:var(--accent);color:var(--on-accent)}
+.views{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--panel);box-shadow:var(--shadow);border-radius:16px;padding:5px;margin-bottom:14px}.views button{background:transparent;color:var(--muted);padding:8px 2px;white-space:nowrap;font-size:13px}.views button.active{background:var(--accent);color:var(--on-accent)}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border-radius:13px;padding:4px;margin-bottom:12px}.modes button{min-height:38px;padding:6px;background:transparent;color:var(--muted);font-size:14px;border-radius:10px}.modes button.active{background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
 .card{background:var(--panel);box-shadow:var(--shadow);border-radius:18px;padding:16px;margin-bottom:12px}
 .muted{color:var(--muted);font-size:12px}.bar{height:9px;background:var(--track);border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--accent);border-radius:99px}
@@ -67,6 +67,10 @@ body.locked .wrap{display:none}
 #loginGate .box{width:min(400px,100%);background:var(--panel);border-radius:22px;padding:24px 20px;box-shadow:var(--shadow)}
 #loginGate h1{font-size:20px;margin:0 0 4px}#loginGate .field{display:flex;flex-direction:column;gap:4px;margin-top:14px;font-size:13px;font-weight:700}
 #loginGate .err{color:var(--red);font-size:13px;font-weight:700;min-height:20px;margin:10px 0 0}
+#statsView .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--panel);box-shadow:var(--shadow);border-radius:14px;padding:4px;margin-bottom:12px}#statsView .seg button{background:transparent;color:var(--muted);padding:6px 4px;min-height:38px;font-size:13px}#statsView .seg button.active{background:var(--accent-soft);color:var(--accent)}
+.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}.stat{background:var(--panel);box-shadow:var(--shadow);border-radius:16px;padding:12px 14px}.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--muted)}
+.chart h3{margin:0 0 8px;font-size:14px}.sbar{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}.sbar span{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sbar div{flex:1;height:10px;background:var(--track);border-radius:6px;overflow:hidden}.sbar i{display:block;height:100%;background:var(--accent)}.sbar b{flex:0 0 auto;min-width:3.4em;text-align:right}
+#backupList .bk{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}#backupList .bk small{display:block;color:var(--muted);font-size:12px}#backupList button{min-height:36px;padding:6px 12px}
 #toast{position:fixed;left:12px;right:12px;top:12px;max-width:520px;margin:auto;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;z-index:9}#toast.error{background:var(--red);color:var(--panel)}
 #cloudStatus{margin:0 0 10px}
 .subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
@@ -88,7 +92,7 @@ body.locked .wrap{display:none}
 </div>
 <div class="wrap">
   <header><span class="orb" id="orb" aria-hidden="true"></span><div><h1>課題トラッカー</h1><p id="today"></p><p id="greeting"></p></div><button id="settingsBtn">⚙ 設定</button></header>
-  <nav class="views"><button data-view="list">一覧</button><button data-view="edit">編集</button><button data-view="timer">⏱ タイマー</button></nav>
+  <nav class="views"><button data-view="list">一覧</button><button data-view="edit">編集</button><button data-view="timer">⏱ タイマー</button><button data-view="stats">📈 記録</button></nav>
 
   <div id="listView">
     <button id="syncBar" hidden>☁ 未保存の変更があります。タップしてクラウドへ保存</button>
@@ -109,6 +113,11 @@ body.locked .wrap{display:none}
     <button class="wide" id="matBtn" style="margin-bottom:12px">📚 教材を登録・編集</button>
     <div id="editList"></div>
     <details class="card" id="clearedCard" style="margin-top:12px"><summary id="clearedCount"></summary><div id="clearedList"></div></details>
+  </div>
+
+  <div id="statsView" hidden>
+    <div class="seg" id="statsRange"><button data-days="7">7日</button><button data-days="14">14日</button><button data-days="30">30日</button><button data-days="90">90日</button></div>
+    <div id="statsBody"></div>
   </div>
 
   <div id="timerView" hidden>
@@ -170,9 +179,17 @@ body.locked .wrap{display:none}
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><button data-notify="morning">朝6時</button><button data-notify="evening">夜20時</button><button data-notify="night">夜22時</button></div>
   <p class="muted">その通知を今すぐDiscordへ送ります。未保存の変更は、先にクラウドへ保存してから送ります。対象がない場合は「テスト送信」と書いた通知が届きます。</p>
   <h3>バックアップ</h3>
+  <button class="wide" id="backupBtn">クラウドのバックアップから復元…</button>
+  <p class="muted"></p>
   <button class="wide" id="exportBtn">課題データをファイルに書き出す</button>
-  <p class="muted">課題データはこのブラウザに自動保存され、接続設定済みなら変更の数秒後にクラウドへも自動保存されます。タイマーの記録はクラウドには保存されません。</p>
+  <p class="muted">課題データはこのブラウザに自動保存され、接続設定済みなら変更の数秒後にクラウドへも自動保存されます。タイマーの記録もクラウドに保存され、「📈 記録」のグラフに使われます。</p>
   <div class="actions"><button id="closeSettingsBtn">閉じる</button></div>
+</dialog>
+<dialog id="backupDialog">
+  <h2>バックアップから復元</h2>
+  <p class="muted">クラウドには、変更があったときに最短3時間おきと、毎日の通知時刻に自動でバックアップが残ります（新しい60件まで）。復元すると、クラウドとこの端末の課題データがその時点の内容に置き換わります。復元前の内容もバックアップに残ります。</p>
+  <div id="backupList"></div>
+  <div class="actions"><button id="closeBackupBtn">閉じる</button></div>
 </dialog>
 <div id="toast" role="status" hidden></div>
 
@@ -194,6 +211,25 @@ function toast(message,isError=false){const el=$('toast');el.textContent=message
 
 /* ---------- 保存・クラウド ---------- */
 const cloudReady=()=>!!(cloudConfig.url&&cloudConfig.token);
+/* クラウドの版番号：この端末が最後に見た版。他の端末が先に保存していないかの照合に使う */
+const REV_KEY='study-task-rev-v1';
+let cloudRev=readStore(REV_KEY,null),conflict=false;
+function setRev(r){cloudRev=Number.isInteger(r)?r:null;writeStore(REV_KEY,cloudRev)}
+/* クラウドの内容をこの端末に取り込む */
+function applyCloud(data){
+ tasks=data.tasks;writeStore(KEY,tasks);
+ if(Array.isArray(data.materials)){materials=data.materials;writeStore(MAT_KEY,materials)}
+ setRev(data.rev);conflict=false;clearTimeout(autoTimer);setDirty(false);
+}
+/* クラウドへ保存（baseRevで他端末との衝突を検出。force=trueで上書き） */
+async function pushCloud(force=false,keepalive=false){
+ const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method:'PUT',keepalive,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},body:JSON.stringify({tasks,materials,baseRev:cloudRev,force})});
+ const data=await response.json().catch(()=>({}));
+ if(response.status===401)lockApp('アクセスキーが違うか、変更されました。もう一度ログインしてください。');
+ if(response.status===409){conflict=true;const e=new Error('他の端末でより新しい変更が保存されています。');e.conflict=true;throw e}
+ if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
+ conflict=false;setRev(data.rev);return data;
+}
 function setDirty(v){dirty=v;writeStore(DIRTY_KEY,v);$('syncBar').hidden=!(dirty&&cloudReady())}
 function saveMaterials(){if(!writeStore(MAT_KEY,materials))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
 function save(){if(!writeStore(KEY,tasks))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
@@ -212,7 +248,7 @@ async function cloudAction(button,work){button.disabled=true;setCloudStatus('通
  finally{button.disabled=false}}
 /* ---------- 自動保存（変更の2秒後にクラウドへ） ---------- */
 let autoTimer=null,autoBusy=false,autoAgain=false;
-const autoOn=()=>cloudReady()&&cloudConfig.auto!==false;
+const autoOn=()=>cloudReady()&&cloudConfig.auto!==false&&!conflict;
 function scheduleAutoSave(){if(!autoOn())return;clearTimeout(autoTimer);autoTimer=setTimeout(autoSave,2000)}
 async function autoSave(keepalive=false){
  clearTimeout(autoTimer);
@@ -221,13 +257,11 @@ async function autoSave(keepalive=false){
  autoBusy=true;setCloudStatus('自動保存中…');
  try{
   const sent=JSON.stringify([tasks,materials]);
-  const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method:'PUT',keepalive,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},body:JSON.stringify({tasks,materials})});
-  const data=await response.json().catch(()=>({}));
-  if(response.status===401)lockApp('アクセスキーが違うか、変更されました。もう一度ログインしてください。');
-  if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
+  await pushCloud(false,keepalive);
   if(sent===JSON.stringify([tasks,materials]))setDirty(false);
   setCloudStatus('自動保存しました（'+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'）');
  }catch(e){
+  if(e.conflict){setCloudStatus('他の端末で先に保存されています。自動保存を止めました。設定の「保存する」で上書きするか、「読み込む」でクラウドの内容を取り込んでください。');toast('他の端末の変更とぶつかりました。設定から選んでください。',true);return}
   setCloudStatus('自動保存に失敗しました（未保存の変更は残っています）：'+e.message);
   clearTimeout(autoTimer);autoTimer=setTimeout(autoSave,30000); /* 30秒後に再試行 */
  }finally{
@@ -235,10 +269,16 @@ async function autoSave(keepalive=false){
   if(autoAgain){autoAgain=false;scheduleAutoSave()}
  }
 }
-const saveToCloud=button=>cloudAction(button,async()=>{const sent=JSON.stringify([tasks,materials]);await cloudRequest('PUT',{tasks,materials});if(sent===JSON.stringify([tasks,materials]))setDirty(false);return'クラウドに保存しました。'});
+const saveToCloud=button=>cloudAction(button,async()=>{const sent=JSON.stringify([tasks,materials]);
+ try{await pushCloud()}catch(e){
+  if(!e.conflict)throw e;
+  if(!confirm('他の端末で、より新しい変更が保存されています。\nこの端末の内容で上書きしますか？\n（上書き前のクラウドの内容は、バックアップに残ります）\n\n上書きしたくない場合はキャンセルして、「読み込む」でクラウドの内容を取り込んでください。'))return'上書きせず中止しました。';
+  await pushCloud(true);
+ }
+ if(sent===JSON.stringify([tasks,materials]))setDirty(false);return'クラウドに保存しました。'});
 const loadFromCloud=button=>cloudAction(button,async()=>{const data=await cloudRequest('GET');if(!Array.isArray(data.tasks))throw new Error('クラウドに課題データがありません。先に保存してください。');
  if(!confirm('この端末の課題データをクラウドの内容で置き換えます。よろしいですか？'))return'読み込みをキャンセルしました。';
- tasks=data.tasks;if(Array.isArray(data.materials)){materials=data.materials;writeStore(MAT_KEY,materials)}clearTimeout(autoTimer);writeStore(KEY,tasks);setDirty(false);showView(view);return'クラウドから読み込みました。'});
+ applyCloud(data);showView(view);return'クラウドから読み込みました。'});
 
 /* ---------- 日付と計画 ---------- */
 const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
@@ -480,6 +520,30 @@ const flatten=list=>list.flatMap(s=>s.from===undefined?[s]:Array.from({length:s.
 function loadPlan(){const p=readStore(PLAN_KEY,null);if(p)return p;const np={base:300000,times:{},blocks:[]};
  const old=readStore(OLD_PLAN_KEY,[]);for(const s of old){np.blocks.push({taskId:s.taskId,from:s.from,count:s.to-s.from+1});flatten([s]).forEach(x=>np.times[`${x.taskId}:${x.no}`]=x.target)}return np}
 let plan=loadPlan(),run=readStore(RUN_KEY,null),runHistory=readStore(HISTORY_KEY,[]);
+/* ---------- タイマー記録のクラウド送信 ---------- */
+const PEND_KEY='study-timer-pending-v1',HALL_KEY='study-timer-histall-v1',HINIT_KEY='study-timer-hist-init-v1';
+/* クラウドに送る軽い形（問題ごとの時間は含めない）。parts は教材別の問題数 */
+function slimEntry(h){const m=new Map();for(const x of h.plan||[])m.set(x.label,(m.get(x.label)||0)+1);
+ return{date:h.date,title:h.title,count:h.count,total:h.total,target:h.target,parts:[...m].map(([label,n])=>({label,n}))}}
+let pendingHist=readStore(PEND_KEY,[]);
+if(!readStore(HINIT_KEY,false)){ /* 初回だけ、この端末に残っている記録も送る */
+ const ids=new Set(pendingHist.map(x=>x.date));
+ for(const h of runHistory)if(!ids.has(h.date))pendingHist.push(slimEntry(h));
+ writeStore(PEND_KEY,pendingHist);writeStore(HINIT_KEY,true);
+}
+let flushing=false;
+async function flushHistory(){
+ if(flushing||!cloudReady())return;
+ flushing=true;
+ try{
+  while(pendingHist.length){
+   const send=pendingHist.slice(0,100);
+   await cloudRequest('POST',{entries:send},'/api/history');
+   const ids=new Set(send.map(x=>x.date));
+   pendingHist=pendingHist.filter(x=>!ids.has(x.date));writeStore(PEND_KEY,pendingHist);
+  }
+ }catch{}finally{flushing=false}
+}
 const savePlan=()=>writeStore(PLAN_KEY,plan);
 const newBlock=(t,from=null)=>({taskId:t.id,from,count:5});
 const timeOf=(id,no)=>plan.times[`${id}:${no}`]??plan.base;
@@ -534,6 +598,7 @@ function togglePause(){if(!run||isDone())return;if(run.since){run.base+=Math.max
 function endRun(){run=null;saveRunState();releaseAwake();renderTimer();window.scrollTo(0,0)}
 function saveRun(){if(!run||!isDone())return;
  runHistory.unshift({date:run.date,title:[...new Set(run.items.map(x=>x.label))].join(' → '),count:run.items.length,total:run.times.at(-1),target:cumulative(run.items).at(-1),times:run.times,plan:run.items});
+ pendingHist.push(slimEntry(runHistory[0]));writeStore(PEND_KEY,pendingHist);flushHistory();
  runHistory=runHistory.slice(0,20);writeStore(HISTORY_KEY,runHistory);plan.blocks.forEach(b=>b.from=null);plan.blocks=plan.blocks.slice(0,1);savePlan();endRun()}
 function renderRun(){const cum=cumulative(run.items),done=isDone(),i=index(),many=new Set(run.items.map(x=>x.taskId)).size>1;
  $('splitBody').innerHTML=run.items.map((x,j)=>{const time=run.times[j],d=time===undefined?null:time-cum[j];return`<tr class="${j===i?'now':''}"><td>${x.no}番<small>${many?esc(x.label):`目安 ${fmt(x.target,false)}`}</small></td><td>${fmt(cum[j])}</td><td>${d===null?'—':fmt(time)}</td><td ${j===i?'id="liveDiff"':''} class="${d===null?'':diffClass(d)}">${d===null?'':fmtDiff(d)}</td></tr>`}).join('');
@@ -553,8 +618,8 @@ function tick(){if(!run)return;const cum=cumulative(run.items),clock=$('clock');
  $('nowInfo').textContent=`${x.label}・`+(diff>0?`全体で ${fmt(diff,false)} 遅れ`:`あと ${fmt(Math.ceil(-diff/1000)*1000,false)} で解けば目標ペース`)}
 function renderTimer(){document.body.classList.toggle('running',view==='timer'&&!!run);$('setupPanel').hidden=!!run;$('runPanel').hidden=!run;clearInterval(ticker);
  if(run){renderRun();ticker=setInterval(tick,31)}else renderSetup()}
-function showView(v){view=v;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('listView').hidden=v!=='list';$('editView').hidden=v!=='edit';$('timerView').hidden=v!=='timer';
- if(v==='timer')renderTimer();else{clearInterval(ticker);document.body.classList.remove('running');v==='edit'?renderEdit():renderList()}}
+function showView(v){view=v;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('listView').hidden=v!=='list';$('editView').hidden=v!=='edit';$('timerView').hidden=v!=='timer';$('statsView').hidden=v!=='stats';
+ if(v==='timer')renderTimer();else{clearInterval(ticker);document.body.classList.remove('running');v==='stats'?openStats():v==='edit'?renderEdit():renderList()}}
 async function keepAwake(){try{if(navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null)}}catch{}}
 function releaseAwake(){try{wakeLock?.release()}catch{}wakeLock=null}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){autoSave(true);return}if(run?.since)keepAwake();if(view==='list')renderList()});
@@ -570,7 +635,7 @@ document.addEventListener('keyup',e=>{if(view==='timer'&&run&&e.code==='Space')e
 $('settingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;$('autoSaveChk').checked=cloudConfig.auto!==false;setCloudStatus(!cloudReady()?'クラウド未接続です。下で接続設定をしてください。':dirty?'クラウドに未保存の変更があります。':'接続設定済みです。');$('settingsDialog').showModal()};
 $('closeSettingsBtn').onclick=()=>$('settingsDialog').close();
 document.querySelectorAll('[data-notify]').forEach(b=>b.onclick=()=>cloudAction(b,async()=>{
- if(dirty){const sent=JSON.stringify([tasks,materials]);await cloudRequest('PUT',{tasks,materials});if(sent===JSON.stringify([tasks,materials]))setDirty(false)}
+ if(dirty){const sent=JSON.stringify([tasks,materials]);await pushCloud();if(sent===JSON.stringify([tasks,materials]))setDirty(false)}
  await cloudRequest('POST',null,'/api/notify?kind='+b.dataset.notify);
  return'通知を送信しました。Discordを確認してください。'}));
 $('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,''),token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token,auto:$('autoSaveChk').checked};writeStore(CLOUD_KEY,cloudConfig);setCloudStatus('接続設定を保存しました。');$('syncBar').hidden=!dirty;scheduleAutoSave()};
@@ -594,7 +659,24 @@ applyLook();
 /* ---------- ログイン ---------- */
 const AUTH_KEY='study-task-auth-v1';
 let booted=false;
-function bootApp(){document.body.classList.remove('locked');$('loginGate').hidden=true;if(booted){showView(view);return}booted=true;applyLook();showView(run?'timer':'list')}
+function bootApp(){document.body.classList.remove('locked');$('loginGate').hidden=true;if(booted){showView(view);pullIfNewer();flushHistory();return}booted=true;applyLook();showView(run?'timer':'list');pullIfNewer();flushHistory()}
+/* 他の端末で保存された新しい内容があれば取り込む（この端末に未保存の変更がないときだけ） */
+let pulling=false;
+async function pullIfNewer(){
+ if(pulling||!cloudReady()||dirty||run||document.querySelector('dialog[open]'))return;
+ pulling=true;
+ try{
+  const data=await cloudRequest('GET');
+  if(!Number.isInteger(data.rev))return;
+  if((cloudRev===null||data.rev>cloudRev)&&Array.isArray(data.tasks)){
+   const changed=JSON.stringify([tasks,materials])!==JSON.stringify([data.tasks,Array.isArray(data.materials)?data.materials:materials]);
+   applyCloud(data);showView(view);
+   if(changed)toast('クラウドの最新の内容を読み込みました。');
+  }else if(cloudRev===null)setRev(data.rev);
+ }catch{}finally{pulling=false}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!document.body.classList.contains('locked')){pullIfNewer();flushHistory()}});
+window.addEventListener('online',()=>flushHistory());
 function lockApp(message=''){
  writeStore(AUTH_KEY,false);clearTimeout(autoTimer);
  document.body.classList.add('locked');$('loginGate').hidden=false;
@@ -613,11 +695,6 @@ $('loginForm').onsubmit=async e=>{
   if(response.status===401){err.textContent='アクセスキーが違います。';return}
   if(!response.ok){err.textContent=data.error||`通信エラー（${response.status}）`;return}
   cloudConfig={url,token,auto:cloudConfig.auto!==false};writeStore(CLOUD_KEY,cloudConfig);writeStore(AUTH_KEY,true);
-  /* この端末に課題データがなければ、クラウドから自動で読み込む */
-  if(localStorage.getItem(KEY)===null&&Array.isArray(data.tasks)){
-   tasks=data.tasks;writeStore(KEY,tasks);
-   if(Array.isArray(data.materials)){materials=data.materials;writeStore(MAT_KEY,materials)}
-  }
   err.textContent='';$('loginToken').value='';bootApp();
  }catch(ex){err.textContent='接続できませんでした。URLと通信状況を確認してください。'}
  finally{btn.disabled=false}
@@ -627,6 +704,78 @@ $('logoutBtn').onclick=async()=>{
  if(dirty&&!confirm('クラウドに未保存の変更があります。このままログアウトしますか？'))return;
  if(!confirm('ログアウトしますか？'))return;
  cloudConfig={...cloudConfig,token:''};writeStore(CLOUD_KEY,cloudConfig);lockApp();
+};
+/* ---------- 記録（グラフ） ---------- */
+const STATS_KEY='study-stats-days-v1';let statsDays=readStore(STATS_KEY,14);
+function histAll(){ /* クラウド分＋この端末の分（未送信含む）を日時で重複なくまとめる */
+ const map=new Map();
+ for(const h of readStore(HALL_KEY,[]))map.set(h.date,h);
+ for(const h of runHistory)map.set(h.date,slimEntry(h));
+ for(const h of pendingHist)map.set(h.date,h);
+ return[...map.values()].sort((a,b)=>b.date-a.date)}
+async function fetchHistory(){if(!cloudReady())return false;
+ try{const d=await cloudRequest('GET',null,'/api/history');if(Array.isArray(d.history)){writeStore(HALL_KEY,d.history);return true}}catch{}return false}
+function openStats(){renderStats();flushHistory().then(fetchHistory).then(ok=>{if(ok&&view==='stats')renderStats()})}
+const niceMax=(v,steps=[1,2,5,10])=>{if(!(v>0))return 1;const p=10**Math.floor(Math.log10(v)),m=steps.find(x=>x*p>=v);return m*p};
+const fmtHM=ms=>{const m=Math.round(ms/60000);return m>=60?`${Math.floor(m/60)}時間${m%60}分`:`${m}分`};
+const svgBox=(H,inner)=>`<svg viewBox="0 0 640 ${H}" width="100%" role="img" style="display:block;max-width:100%;height:auto">${inner}</svg>`;
+const CH={H:170,pl:44,pt:14,pb:22};
+function gridY(max,lab){return[0,.5,1].map(f=>{const y=CH.pt+(CH.H-CH.pt-CH.pb)*(1-f);return`<line x1="${CH.pl}" x2="634" y1="${y}" y2="${y}" style="stroke:var(--line)"/><text x="${CH.pl-5}" y="${y+4}" text-anchor="end" style="fill:var(--muted);font-size:11px">${lab(max*f)}</text>`}).join('')}
+function gridX(keys){const n=keys.length,bw=(634-CH.pl)/n,step=Math.ceil(n/6);
+ return keys.map((k,i)=>{if(n>14?i%step:0)return'';return`<text x="${CH.pl+i*bw+bw/2}" y="${CH.H-6}" text-anchor="middle" style="fill:var(--muted);font-size:11px">${n>14?`${Number(k.slice(5,7))}/${Number(k.slice(8))}`:Number(k.slice(8))}</text>`}).join('')}
+function barChart(keys,vals,lab){
+ const max=niceMax(Math.max(...vals)),n=vals.length,bw=(634-CH.pl)/n,show=n<=14;
+ return svgBox(CH.H,gridY(max,lab)+vals.map((v,i)=>{const h=(CH.H-CH.pt-CH.pb)*v/max,w=bw*.7,x=CH.pl+i*bw+bw*.15,y=CH.H-CH.pb-h;
+  return`<rect x="${x}" y="${y}" width="${w}" height="${v>0?Math.max(h,1):0}" rx="2" style="fill:var(--accent)"><title>${Number(keys[i].slice(5,7))}/${Number(keys[i].slice(8))}：${lab(v)}</title></rect>`+(show&&v>0?`<text x="${x+w/2}" y="${y-3}" text-anchor="middle" style="fill:var(--text);font-size:10px">${lab(v)}</text>`:'')}).join('')+gridX(keys))}
+function paceChart(keys,act,tgt){
+ const all=[...act,...tgt].filter(v=>v!=null),max=niceMax(Math.max(...all)/1000,[1,1.5,2,3,4,5,6,8,10])*1000,n=keys.length,bw=(634-CH.pl)/n;
+ const X=i=>CH.pl+i*bw+bw/2,Y=v=>CH.H-CH.pb-(CH.H-CH.pt-CH.pb)*v/max;
+ const line=(arr,color,dash)=>{const pts=arr.map((v,i)=>v==null?null:[X(i),Y(v)]).filter(Boolean);
+  return pts.length?`<polyline points="${pts.map(q=>q.join(',')).join(' ')}" fill="none" stroke-width="2" ${dash?'stroke-dasharray="5 4"':''} style="stroke:${color}"/>`+(dash?'':pts.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="${n>30?1.8:3}" style="fill:${color}"/>`).join('')):''};
+ return svgBox(CH.H,gridY(max,v=>fmt(v,false))+line(tgt,'var(--muted)',true)+line(act,'var(--accent)',false)+gridX(keys))}
+function renderStats(){
+ document.querySelectorAll('#statsRange [data-days]').forEach(b=>b.classList.toggle('active',Number(b.dataset.days)===statsDays));
+ const today=new Date();today.setHours(0,0,0,0);
+ const keys=Array.from({length:statsDays},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()-(statsDays-1-i));return ymd(d)});
+ const by=new Map(keys.map(k=>[k,{ms:0,n:0,target:0}])),parts=new Map();
+ for(const h of histAll()){const r=by.get(ymd(new Date(h.date)));if(!r)continue;
+  r.ms+=h.total;r.n+=h.count;r.target+=h.target;
+  for(const p of h.parts?.length?h.parts:[{label:h.title,n:h.count}])parts.set(p.label,(parts.get(p.label)||0)+p.n)}
+ const rows=keys.map(k=>by.get(k)),totalMs=rows.reduce((a,r)=>a+r.ms,0),totalN=rows.reduce((a,r)=>a+r.n,0),totalT=rows.reduce((a,r)=>a+r.target,0),active=rows.filter(r=>r.n).length;
+ const note=!cloudReady()?'クラウド未接続のため、この端末の記録だけを表示しています。':pendingHist.length?`クラウドに未送信の記録が${pendingHist.length}件あります（通信できるときに自動で送ります）。`:'クラウドに保存された記録も含めて表示しています。';
+ if(!totalN){$('statsBody').innerHTML=`<div class="card"><p>この期間の記録はまだありません。</p><p class="muted">⏱ タイマーで問題を解き終えると、ここにグラフが出ます。</p></div><p class="muted">${esc(note)}</p>`;return}
+ const maxP=Math.max(...parts.values()),top=[...parts].sort((a,b)=>b[1]-a[1]).slice(0,8);
+ $('statsBody').innerHTML=`<div class="sgrid">
+  <div class="stat"><b>${esc(fmtHM(totalMs))}</b><span>勉強時間（タイマー）</span></div>
+  <div class="stat"><b>${totalN}問</b><span>解いた問題</span></div>
+  <div class="stat"><b>${active}／${statsDays}日</b><span>勉強した日</span></div>
+  <div class="stat"><b>${fmt(totalMs/totalN,false)}</b><span>1問あたり平均（目標 ${fmt(totalT/totalN,false)}）</span></div></div>
+  <div class="card chart"><h3>日ごとの勉強時間（分）</h3>${barChart(keys,rows.map(r=>r.ms/60000),v=>Math.round(v))}</div>
+  <div class="card chart"><h3>日ごとの解いた問題数</h3>${barChart(keys,rows.map(r=>r.n),v=>Math.round(v))}</div>
+  <div class="card chart"><h3>1問あたりの平均時間</h3>${paceChart(keys,rows.map(r=>r.n?r.ms/r.n:null),rows.map(r=>r.n?r.target/r.n:null))}<p class="muted" style="margin:6px 0 0">実線＝実績　点線＝目標（低いほど速い）</p></div>
+  <div class="card chart"><h3>教材ごとの問題数</h3>${top.map(([l,n])=>`<div class="sbar"><span>${esc(l)}</span><div><i style="width:${n/maxP*100}%"></i></div><b>${n}問</b></div>`).join('')}</div>
+  <p class="muted">${esc(note)}</p>`}
+$('statsRange').onclick=e=>{const b=e.target.closest('[data-days]');if(!b)return;statsDays=Number(b.dataset.days);writeStore(STATS_KEY,statsDays);renderStats()};
+
+/* ---------- バックアップから復元 ---------- */
+const bkLabel=k=>{const t=k.slice(7);return`${Number(t.slice(5,7))}/${Number(t.slice(8,10))} ${t.slice(11,16)}`};
+$('backupBtn').onclick=async()=>{
+ const btn=$('backupBtn');btn.disabled=true;
+ try{
+  const data=await cloudRequest('GET',null,'/api/backups'),list=data.backups||[];
+  $('backupList').innerHTML=list.length?list.map(b=>`<div class="bk"><div>${esc(bkLabel(b.key))}<small>課題${esc(b.n??'?')}件・解いた問題 計${esc(b.done??'?')}問</small></div><button data-key="${esc(b.key)}" data-label="${esc(bkLabel(b.key))}">復元</button></div>`).join(''):'<p class="muted">まだバックアップがありません。</p>';
+  $('settingsDialog').close();$('backupDialog').showModal();
+ }catch(e){alert('バックアップ一覧を取得できませんでした\n'+e.message)}finally{btn.disabled=false}
+};
+$('closeBackupBtn').onclick=()=>$('backupDialog').close();
+$('backupList').onclick=async e=>{
+ const b=e.target.closest('[data-key]');if(!b)return;
+ if(!confirm(`${b.dataset.label} の状態に戻します。\nクラウドとこの端末の課題データが置き換わります。よろしいですか？\n（復元前の内容もバックアップに残ります）`))return;
+ b.disabled=true;
+ try{
+  await cloudRequest('POST',null,'/api/restore?key='+encodeURIComponent(b.dataset.key));
+  applyCloud(await cloudRequest('GET'));showView(view);$('backupDialog').close();toast('バックアップから復元しました。');
+ }catch(err){alert('復元に失敗しました\n'+err.message)}finally{b.disabled=false}
 };
 if(readStore(AUTH_KEY,false)&&cloudReady())bootApp();else lockApp();
 </script>
