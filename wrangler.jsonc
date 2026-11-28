@@ -1,0 +1,16 @@
+{
+  // ★ Cloudflareにある今のWorkerの名前に必ず合わせる（違うと別のWorkerが新しくできます）
+  "name": "YOUR-WORKER-NAME",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+
+  // ★ KVの「ID」を入れる（Workers & Pages → KV → 使っているKVの名前の横に表示）
+  "kv_namespaces": [
+    { "binding": "TASKS_KV", "id": "YOUR-KV-NAMESPACE-ID" }
+  ],
+
+  // 日本時間の朝6:00 / 夜20:00 / 夜22:00（UTC表記）
+  "triggers": {
+    "crons": ["0 21 * * *", "0 11 * * *", "0 13 * * *"]
+  }
+}
