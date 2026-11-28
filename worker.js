@@ -111,7 +111,7 @@ export default {
   async fetch(request, env) {
     const cors = {
       'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-      'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     };
     const reply = (data, status = 200) =>
