@@ -62,6 +62,11 @@ body.running .wrap{padding:8px 10px 0;height:100vh;height:100dvh;display:flex;fl
 .result{text-align:right;font-size:17px;font-weight:800;padding:0 2px 14px}
 .controls{padding-bottom:calc(10px + env(safe-area-inset-bottom))}.big{width:100%;min-height:84px;font-size:23px;margin-bottom:8px;border-radius:20px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:18px;box-shadow:0 20px 70px #0006}dialog::backdrop{background:var(--backdrop)}dialog h2{font-size:17px;margin:0 0 14px}dialog h3{font-size:13px;margin:20px 0 9px}.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}.actions .danger{margin-right:auto}
+body.locked .wrap{display:none}
+#loginGate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg)}
+#loginGate .box{width:min(400px,100%);background:var(--panel);border-radius:22px;padding:24px 20px;box-shadow:var(--shadow)}
+#loginGate h1{font-size:20px;margin:0 0 4px}#loginGate .field{display:flex;flex-direction:column;gap:4px;margin-top:14px;font-size:13px;font-weight:700}
+#loginGate .err{color:var(--red);font-size:13px;font-weight:700;min-height:20px;margin:10px 0 0}
 #toast{position:fixed;left:12px;right:12px;top:12px;max-width:520px;margin:auto;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;z-index:9}#toast.error{background:var(--red);color:var(--panel)}
 #cloudStatus{margin:0 0 10px}
 .subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
@@ -70,7 +75,17 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 .pace{font-weight:800;margin-left:6px;white-space:nowrap}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="loginGate">
+  <form class="box" id="loginForm" autocomplete="on">
+    <h1>🔒 課題トラッカー</h1>
+    <div class="muted">ログインしてください</div>
+    <label class="field">Worker URL<input id="loginUrl" type="url" autocomplete="url" placeholder="https://study-tracker-api.○○.workers.dev"></label>
+    <label class="field">アクセスキー<input id="loginToken" type="password" autocomplete="current-password"></label>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="primary wide" id="loginBtn" type="submit">ログイン</button>
+  </form>
+</div>
 <div class="wrap">
   <header><span class="orb" id="orb" aria-hidden="true"></span><div><h1>課題トラッカー</h1><p id="today"></p><p id="greeting"></p></div><button id="settingsBtn">⚙ 設定</button></header>
   <nav class="views"><button data-view="list">一覧</button><button data-view="edit">編集</button><button data-view="timer">⏱ タイマー</button></nav>
@@ -149,6 +164,8 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
   <label class="field">アクセスキー（WorkerのAPI_TOKEN）<input id="cloudToken" type="password"></label>
   <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="autoSaveChk" style="width:auto"> 変更したら自動でクラウドへ保存する</label>
   <button class="wide" id="cloudConnectBtn">接続設定を保存</button>
+  <h3>ログイン</h3>
+  <button class="wide danger" id="logoutBtn">ログアウト</button>
   <h3>通知テスト（Discord）</h3>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><button data-notify="morning">朝6時</button><button data-notify="evening">夜20時</button><button data-notify="night">夜22時</button></div>
   <p class="muted">その通知を今すぐDiscordへ送ります。未保存の変更は、先にクラウドへ保存してから送ります。対象がない場合は「テスト送信」と書いた通知が届きます。</p>
@@ -165,10 +182,7 @@ const PLAN_KEY='study-timer-plan-v2',OLD_PLAN_KEY='study-timer-plan-v1',RUN_KEY=
 const $=id=>document.getElementById(id);
 function readStore(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
 function writeStore(k,v){try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
-const initial=[
- {id:1,subject:'数学',book:'4STEP',name:'数学C',start:213,end:302,current:223},
- {id:2,subject:'数学',book:'4STEP',name:'数学Ⅲ',start:1,end:132,current:8}
-];
+const initial=[];
 let tasks=readStore(KEY,initial),cloudConfig=readStore(CLOUD_KEY,{url:'',token:''}),dirty=readStore(DIRTY_KEY,false);
 const MAT_KEY='study-materials-v1';
 let materials=readStore(MAT_KEY,[]);
@@ -188,6 +202,7 @@ async function cloudRequest(method,body,path='/api/tasks'){
  if(!cloudReady())throw new Error('先にWorker URLとアクセスキーを登録してください。');
  const response=await fetch(cloudConfig.url.replace(/\/$/,'')+path,{method,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
  const data=await response.json().catch(()=>({}));
+ if(response.status===401)lockApp('アクセスキーが違うか、変更されました。もう一度ログインしてください。');
  if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
  return data;
 }
@@ -208,6 +223,7 @@ async function autoSave(keepalive=false){
   const sent=JSON.stringify([tasks,materials]);
   const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method:'PUT',keepalive,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},body:JSON.stringify({tasks,materials})});
   const data=await response.json().catch(()=>({}));
+  if(response.status===401)lockApp('アクセスキーが違うか、変更されました。もう一度ログインしてください。');
   if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
   if(sent===JSON.stringify([tasks,materials]))setDirty(false);
   setCloudStatus('自動保存しました（'+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})+'）');
@@ -574,7 +590,45 @@ $('themeSelect').value=readStore(THEME_KEY,'auto');$('themeSelect').onchange=e=>
 window.addEventListener('pagehide',()=>autoSave(true));window.addEventListener('online',()=>autoSave());
 setInterval(applyLook,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)applyLook()});
 applyLook();
-showView(run?'timer':'list');
+
+/* ---------- ログイン ---------- */
+const AUTH_KEY='study-task-auth-v1';
+let booted=false;
+function bootApp(){document.body.classList.remove('locked');$('loginGate').hidden=true;if(booted){showView(view);return}booted=true;applyLook();showView(run?'timer':'list')}
+function lockApp(message=''){
+ writeStore(AUTH_KEY,false);clearTimeout(autoTimer);
+ document.body.classList.add('locked');$('loginGate').hidden=false;
+ if($('settingsDialog').open)$('settingsDialog').close();
+ $('loginUrl').value=cloudConfig.url||'';$('loginToken').value='';$('loginErr').textContent=message;
+}
+$('loginForm').onsubmit=async e=>{
+ e.preventDefault();
+ const url=$('loginUrl').value.trim().replace(/\/$/,''),token=$('loginToken').value.trim(),err=$('loginErr'),btn=$('loginBtn');
+ if(!/^https:\/\//i.test(url)){err.textContent='https:// から始まるWorker URLを入力してください。';return}
+ if(!token){err.textContent='アクセスキーを入力してください。';return}
+ btn.disabled=true;err.textContent='確認中…';
+ try{
+  const response=await fetch(url+'/api/tasks',{headers:{'Authorization':'Bearer '+token}});
+  const data=await response.json().catch(()=>({}));
+  if(response.status===401){err.textContent='アクセスキーが違います。';return}
+  if(!response.ok){err.textContent=data.error||`通信エラー（${response.status}）`;return}
+  cloudConfig={url,token,auto:cloudConfig.auto!==false};writeStore(CLOUD_KEY,cloudConfig);writeStore(AUTH_KEY,true);
+  /* この端末に課題データがなければ、クラウドから自動で読み込む */
+  if(localStorage.getItem(KEY)===null&&Array.isArray(data.tasks)){
+   tasks=data.tasks;writeStore(KEY,tasks);
+   if(Array.isArray(data.materials)){materials=data.materials;writeStore(MAT_KEY,materials)}
+  }
+  err.textContent='';$('loginToken').value='';bootApp();
+ }catch(ex){err.textContent='接続できませんでした。URLと通信状況を確認してください。'}
+ finally{btn.disabled=false}
+};
+$('logoutBtn').onclick=async()=>{
+ if(dirty&&cloudReady()){try{await autoSave()}catch{}}
+ if(dirty&&!confirm('クラウドに未保存の変更があります。このままログアウトしますか？'))return;
+ if(!confirm('ログアウトしますか？'))return;
+ cloudConfig={...cloudConfig,token:''};writeStore(CLOUD_KEY,cloudConfig);lockApp();
+};
+if(readStore(AUTH_KEY,false)&&cloudReady())bootApp();else lockApp();
 </script>
 </body>
 </html>
