@@ -107,6 +107,48 @@ async function notify(env, kind, force = false) {
   return res.ok ? { ok: true, sent: true } : { ok: false, error: `Discordへの送信に失敗しました（${res.status}）` };
 }
 
+// ---------- 版管理とバックアップ ----------
+// rev：保存のたびに +1 する番号。古い端末からの上書きを検出するために使う
+const BACKUP_GAP = 3 * 3600 * 1000; // 自動バックアップは最短3時間おき
+const BACKUP_KEEP = 60;             // 残すバックアップの数（古いものから削除）
+const getRev = async env => Number(await env.TASKS_KV.get('rev')) || 0;
+const jstStamp = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 23); // 例 2026-11-28T22:00:05.123（同時刻でも上書きしないようミリ秒まで）
+const hashOf = str => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return String(h); };
+const doneOf = tasks => tasks.reduce((a, t) => {
+  const v = Math.min(Math.max(0, t.end - t.start + 1), Math.max(0, t.current - t.start));
+  return a + (Number.isFinite(v) ? v : 0);
+}, 0);
+
+// 今のクラウドの内容をバックアップに残す。force=true なら3時間の間隔を無視（上書き・復元の直前用）
+// 前回のバックアップと内容が同じなら作らない
+async function backup(env, force = false) {
+  const tasks = await env.TASKS_KV.get(KEY, 'json');
+  if (!Array.isArray(tasks)) return null;
+  const last = (await env.TASKS_KV.get('backup-last', 'json')) || {};
+  if (!force && Date.now() - (last.t || 0) < BACKUP_GAP) return null;
+  const materials = await env.TASKS_KV.get('materials', 'json');
+  const hash = hashOf(JSON.stringify([tasks, materials]));
+  if (hash === last.hash) return null;
+  const key = `backup:${jstStamp()}`;
+  await env.TASKS_KV.put(key, JSON.stringify({ tasks, materials, rev: await getRev(env), savedAt: new Date().toISOString() }),
+    { metadata: { n: tasks.length, done: doneOf(tasks) } });
+  await env.TASKS_KV.put('backup-last', JSON.stringify({ t: Date.now(), hash }));
+  const { keys } = await env.TASKS_KV.list({ prefix: 'backup:' });
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - BACKUP_KEEP)).map(k => env.TASKS_KV.delete(k.name)));
+  return key;
+}
+
+// ---------- タイマーの記録（追記専用。日時をキーにまとめるので端末間で衝突しない） ----------
+const HIST_MAX = 5000;
+function cleanEntry(e) {
+  if (!e || ![e.date, e.count, e.total, e.target].every(Number.isFinite)) return null;
+  const parts = (Array.isArray(e.parts) ? e.parts : []).slice(0, 30)
+    .filter(p => p && typeof p.label === 'string' && Number.isFinite(p.n))
+    .map(p => ({ label: p.label.slice(0, 100), n: Math.max(0, Math.floor(p.n)) }));
+  return { date: Math.floor(e.date), title: String(e.title ?? '').slice(0, 300), count: Math.max(0, Math.floor(e.count)),
+    total: Math.max(0, Math.round(e.total)), target: Math.max(0, Math.round(e.target)), parts };
+}
+
 export default {
   async fetch(request, env) {
     const cors = {
@@ -120,7 +162,7 @@ export default {
     // ブラウザが本番の通信前に送る確認
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     const path = new URL(request.url).pathname;
-    if (path !== '/api/tasks' && path !== '/api/notify') return reply({ error: 'URLが違います' }, 404);
+    if (!['/api/tasks', '/api/notify', '/api/backups', '/api/restore', '/api/history'].includes(path)) return reply({ error: 'URLが違います' }, 404);
     if (!env.API_TOKEN) return reply({ error: 'WorkerにAPI_TOKENが設定されていません' }, 500);
     if (!env.TASKS_KV) return reply({ error: 'WorkerにTASKS_KVが接続されていません' }, 500);
     if (request.headers.get('Authorization') !== `Bearer ${env.API_TOKEN}`) {
@@ -136,21 +178,69 @@ export default {
       return reply(r, r.ok ? 200 : 500);
     }
 
+    // タイマー記録（GET：全件 / POST：{entries:[...]} を追加。同じ日時は上書き）
+    if (path === '/api/history') {
+      const cur = (await env.TASKS_KV.get('history', 'json')) || [];
+      if (request.method === 'GET') return reply({ history: cur });
+      if (request.method !== 'POST') return reply({ error: '使えない操作です' }, 405);
+      const body = await request.json().catch(() => null);
+      if (!Array.isArray(body?.entries) || body.entries.length > 200) return reply({ error: '記録データの形式が違います' }, 400);
+      const map = new Map(cur.map(h => [h.date, h]));
+      for (const e of body.entries) { const c = cleanEntry(e); if (c) map.set(c.date, c); }
+      const list = [...map.values()].sort((a, b) => b.date - a.date).slice(0, HIST_MAX);
+      await env.TASKS_KV.put('history', JSON.stringify(list));
+      return reply({ ok: true, count: list.length });
+    }
+
+    // バックアップ一覧（GET /api/backups）：新しい順
+    if (path === '/api/backups') {
+      if (request.method !== 'GET') return reply({ error: '使えない操作です' }, 405);
+      const { keys } = await env.TASKS_KV.list({ prefix: 'backup:' });
+      return reply({ backups: keys.map(k => ({ key: k.name, ...(k.metadata || {}) })).reverse() });
+    }
+
+    // バックアップから復元（POST /api/restore?key=backup:...）。復元前の内容もバックアップに残す
+    if (path === '/api/restore') {
+      if (request.method !== 'POST') return reply({ error: '使えない操作です' }, 405);
+      const key = new URL(request.url).searchParams.get('key') || '';
+      if (!key.startsWith('backup:')) return reply({ error: 'バックアップの指定が違います' }, 400);
+      const snap = await env.TASKS_KV.get(key, 'json');
+      if (!Array.isArray(snap?.tasks)) return reply({ error: 'そのバックアップは見つかりません' }, 404);
+      await backup(env, true);
+      await env.TASKS_KV.put(KEY, JSON.stringify(snap.tasks));
+      if (Array.isArray(snap.materials)) await env.TASKS_KV.put('materials', JSON.stringify(snap.materials));
+      const rev = (await getRev(env)) + 1;
+      await env.TASKS_KV.put('rev', String(rev));
+      return reply({ ok: true, rev });
+    }
+
     if (request.method === 'GET') {
-      return reply({ tasks: await env.TASKS_KV.get(KEY, 'json'), materials: await env.TASKS_KV.get('materials', 'json') });
+      return reply({ tasks: await env.TASKS_KV.get(KEY, 'json'), materials: await env.TASKS_KV.get('materials', 'json'), rev: await getRev(env) });
     }
     if (request.method === 'PUT') {
       const body = await request.json().catch(() => null);
       if (!Array.isArray(body?.tasks)) return reply({ error: '課題データの形式が違います' }, 400);
+      // 端末が最後に見た版と、クラウドの今の版が違えば、他の端末が先に保存している
+      const cur = await getRev(env);
+      if (!body.force && Number.isInteger(body.baseRev) && body.baseRev !== cur) {
+        return reply({ error: '他の端末でより新しい変更が保存されています', conflict: true, rev: cur }, 409);
+      }
+      await backup(env, !!body.force); // 書き換える前の内容を残す（上書き時は必ず）
       await env.TASKS_KV.put(KEY, JSON.stringify(body.tasks));
-      if (Array.isArray(body.materials)) await env.TASKS_KV.put('materials', JSON.stringify(body.materials));
-      return reply({ ok: true });
+      if (Array.isArray(body.materials)) {
+        const next = JSON.stringify(body.materials);
+        if (next !== JSON.stringify(await env.TASKS_KV.get('materials', 'json'))) await env.TASKS_KV.put('materials', next);
+      }
+      const rev = cur + 1;
+      await env.TASKS_KV.put('rev', String(rev));
+      return reply({ ok: true, rev });
     }
     return reply({ error: '使えない操作です' }, 405);
   },
 
   // Cron Triggerから毎日呼ばれる
   async scheduled(event, env, ctx) {
+    ctx.waitUntil(backup(env).catch(e => console.error('backup', e)));
     ctx.waitUntil(notify(env, kindNow()).then(r => { if (!r.ok) console.error(r.error); }));
   },
 };
