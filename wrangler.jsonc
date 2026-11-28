@@ -1,12 +1,12 @@
 {
   // ★ Cloudflareにある今のWorkerの名前に必ず合わせる（違うと別のWorkerが新しくできます）
-  "name": "YOUR-WORKER-NAME",
+  "name": "study-tracker-api",
   "main": "worker.js",
   "compatibility_date": "2026-11-01",
 
   // ★ KVの「ID」を入れる（Workers & Pages → KV → 使っているKVの名前の横に表示）
   "kv_namespaces": [
-    { "binding": "TASKS_KV", "id": "YOUR-KV-NAMESPACE-ID" }
+    { "binding": "TASKS_KV", "id": "efe3788254024836981dcb88d7daf1c8" }
   ],
 
   // 日本時間の朝6:00 / 夜20:00 / 夜22:00（UTC表記）
