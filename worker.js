@@ -8,29 +8,34 @@ const today = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0
 const toDate = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
 const addDays = (s, n) => new Date(toDate(s) + n * 86400000).toISOString().slice(0, 10);
 const daysBetween = (a, b) => Math.round((toDate(b) - toDate(a)) / 86400000);
+const inSk = (sk, n) => sk.some(([x, y]) => n >= x && n <= y);
+const numsFrom = (from, end, sk) => { const r = []; for (let n = from; n <= end; n++) if (!inSk(sk, n)) r.push(n); return r; };
+const unsolved = t => numsFrom(Math.max(t.start, t.current), t.end, t.skip || []);
 const dayStart = t => Math.max(t.start, t.day?.date === today() ? Math.min(t.day.from, t.current) : t.current);
-// ↓ index.html の makePlan / todayInfo と同じ計算
+const dayList = t => numsFrom(dayStart(t), t.end, (t.day?.date === today() ? t.day.skip : t.skip) || []);
+const runsOf = a => { const r = []; for (const n of a) { const l = r.at(-1); if (l && n === l[1] + 1) l[1] = n; else r.push([n, n]); } return r.map(([x, y]) => x === y ? `${x}` : `${x}〜${y}`).join('・') + '番'; };
+// ↓ index.html の makePlan / todayInfo と同じ計算（飛ばして終わった分は除いて数える）
 function makePlan(t) {
-  const now = today(), days = new Map(), base = dayStart(t), total = t.end - base + 1;
+  const now = today(), days = new Map(), nums = dayList(t), total = nums.length;
   const limit = [t.goal, t.due].find(d => d && d >= now), late = !limit && !!(t.goal || t.due);
-  if (total <= 0 || (!limit && !late)) return { days, short: 0, late: false };
+  if (total <= 0 || (!limit && !late)) return { days, short: 0, late: false, total };
   const span = late ? 1 : Math.min(1000, daysBetween(now, limit) + 1), list = Array.from({ length: span }, (_, i) => addDays(now, i));
   const fixed = d => late ? undefined : t.manual?.[d];
-  let rest = Math.max(0, total - list.reduce((a, d) => a + (fixed(d) ?? 0), 0)), free = list.filter(d => fixed(d) === undefined).length, pos = base;
+  let rest = Math.max(0, total - list.reduce((a, d) => a + (fixed(d) ?? 0), 0)), free = list.filter(d => fixed(d) === undefined).length, pos = 0;
   for (const d of list) {
     let q = fixed(d); const manual = q !== undefined;
     if (!manual) { q = Math.ceil(rest / free); rest -= q; free--; }
-    q = Math.max(0, Math.min(q, t.end - pos + 1)); days.set(d, { count: q, from: pos, to: pos + q - 1, manual }); pos += q;
+    q = Math.max(0, Math.min(q, total - pos)); const part = nums.slice(pos, pos + q);
+    days.set(d, { count: q, nums: part, from: part[0], to: part.at(-1), manual }); pos += q;
   }
-  return { days, short: t.end - pos + 1, late };
+  return { days, short: total - pos, late, total };
 }
 function todayInfo(t) {
-  const p = makePlan(t).days.get(today());
+  const pl = makePlan(t), p = pl.days.get(today());
   if (!p) return null;
-  return { ...p, done: Math.max(0, Math.min(p.count, t.current - p.from)) };
+  return { ...p, done: Math.max(0, Math.min(p.count, pl.total - unsolved(t).length)) };
 }
 const nm = t => `${t.book} ${t.name}`;
-const rangeOf = (from, to) => from === to ? `${from}番` : `${from}〜${to}番`;
 const dateText = s => `${Number(s.slice(5, 7))}/${Number(s.slice(8))}(${'日月火水木金土'[new Date(toDate(s)).getUTCDay()]})`;
 const jstHour = () => new Date(Date.now() + 9 * 3600 * 1000).getUTCHours();
 // 実行時刻（日本時間）で種類を決める：〜11時=朝、12〜20時=夜の催促、21時〜=夜の結果
@@ -44,8 +49,8 @@ function collect(tasks) {
     const p = todayInfo(t);
     if (p && p.count) goals.push({ t, p, left: p.count - p.done });
     if (t.day?.date === today()) {
-      const from = t.day.from, to = Math.min(t.end, t.current - 1);
-      if (to >= from) solved.push({ t, from, to, n: to - from + 1 });
+      const left = new Set(unsolved(t)), got = dayList(t).filter(n => !left.has(n));
+      if (got.length) solved.push({ t, text: runsOf(got), n: got.length });
     }
   }
   const sum = (arr, f) => arr.reduce((a, x) => a + f(x), 0);
@@ -54,19 +59,19 @@ function collect(tasks) {
 
 function buildMessage(kind, tasks, force, streak = 0) {
   const c = collect(tasks);
-  const leftLines = c.goals.filter(g => g.left > 0).map(g => `・${nm(g.t)}：あと${g.left}問（${rangeOf(g.p.from + g.p.done, g.p.to)}）`);
+  const leftLines = c.goals.filter(g => g.left > 0).map(g => `・${nm(g.t)}：あと${g.left}問（${runsOf(unsolved(g.t).slice(0, g.left))}）`);
 
   if (kind === 'morning') {
     const parts = [];
     if (c.goal > 0) {
-      const lines = c.goals.map(g => `・${nm(g.t)}：${g.p.count}問（${rangeOf(g.p.from, g.p.to)}）`);
+      const lines = c.goals.map(g => `・${nm(g.t)}：${g.p.count}問（${runsOf(g.p.nums)}）`);
       parts.push(`☀️ おはようございます。今日の目標は合計${c.goal}問です。\n${lines.join('\n')}`);
     }
     // 提出期限が近い課題
     const now = today(), groups = { 0: [], 1: [], 7: [] };
     for (const t of tasks) {
       if (t.cleared || !t.due) continue;
-      const remain = Math.max(0, t.end - Math.max(t.start, t.current) + 1);
+      const remain = unsolved(t).length;
       if (!remain) continue;
       const n = daysBetween(now, t.due);
       const key = n === 0 ? 0 : n === 1 ? 1 : n >= 2 && n <= 7 ? 7 : null;
@@ -88,7 +93,7 @@ function buildMessage(kind, tasks, force, streak = 0) {
 
   // night：1日の結果
   if (!c.goals.length && !c.solved.length) return force ? '【テスト送信】今日の目標も記録もありません。' : null;
-  const doneLines = c.solved.map(s => `・${nm(s.t)}：${s.n}問（${rangeOf(s.from, s.to)}）`).join('\n');
+  const doneLines = c.solved.map(s => `・${nm(s.t)}：${s.n}問（${s.text}）`).join('\n');
   if (c.done > 0 && c.left === 0) {
     return `🎉 今日は目標を達成しました！お疲れさまでした。${streak > 0 ? `\n🔥 ${streak}日連続達成！` : ''}\n今日の成果：合計${c.done}問\n${doneLines}`;
   }
