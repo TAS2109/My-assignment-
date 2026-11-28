@@ -52,7 +52,7 @@ function collect(tasks) {
   return { goals, solved, goal: sum(goals, g => g.p.count), left: sum(goals, g => g.left), done: sum(solved, s => s.n) };
 }
 
-function buildMessage(kind, tasks, force) {
+function buildMessage(kind, tasks, force, streak = 0) {
   const c = collect(tasks);
   const leftLines = c.goals.filter(g => g.left > 0).map(g => `・${nm(g.t)}：あと${g.left}問（${rangeOf(g.p.from + g.p.done, g.p.to)}）`);
 
@@ -90,7 +90,7 @@ function buildMessage(kind, tasks, force) {
   if (!c.goals.length && !c.solved.length) return force ? '【テスト送信】今日の目標も記録もありません。' : null;
   const doneLines = c.solved.map(s => `・${nm(s.t)}：${s.n}問（${rangeOf(s.from, s.to)}）`).join('\n');
   if (c.done > 0 && c.left === 0) {
-    return `🎉 今日は目標を達成しました！お疲れさまでした。\n今日の成果：合計${c.done}問\n${doneLines}`;
+    return `🎉 今日は目標を達成しました！お疲れさまでした。${streak > 0 ? `\n🔥 ${streak}日連続達成！` : ''}\n今日の成果：合計${c.done}問\n${doneLines}`;
   }
   if (c.done > 0) {
     return `今日は合計${c.done}問を達成しました。目標まではあと${c.left}問でした。\n${doneLines}\n\n未達成の分は、明日以降の目標に自動で配り直されます。`;
@@ -98,10 +98,37 @@ function buildMessage(kind, tasks, force) {
   return `今日は何も達成できませんでした。\n未達成の${c.left}問は、明日以降の目標に自動で配り直されます。無理のない範囲で、明日また進めましょう。`;
 }
 
+
+// ---------- 連続達成日数（ストリーク） ----------
+// 夜22時の通知時に「今日の結果」をKVの 'streak' に記録する（1=達成 / 0=未達成）。
+// 目標も記録もない日は記録せず、連続は途切れない（数にも入らない）。未達成の日で途切れる。
+const STREAK_KEEP = 400;
+function streakCount(days) {
+  let n = 0, d = today();
+  for (let i = 0; i < STREAK_KEEP; i++, d = addDays(d, -1)) {
+    if (days[d] === 1) n++; else if (days[d] === 0) break;
+  }
+  return n;
+}
+// save=false（テスト送信）のときは保存せず、「今日の結果を入れたら何日か」だけ返す
+async function updateStreak(env, tasks, save) {
+  const rec = (await env.TASKS_KV.get('streak', 'json')) || {};
+  const days = { ...(rec.days || {}) };
+  const c = collect(tasks);
+  if (c.done > 0 && c.left === 0) days[today()] = 1;
+  else if (c.left > 0) days[today()] = 0;
+  if (save) {
+    const keep = Object.keys(days).sort().slice(-STREAK_KEEP);
+    await env.TASKS_KV.put('streak', JSON.stringify({ days: Object.fromEntries(keep.map(k => [k, days[k]])) }));
+  }
+  return streakCount(days);
+}
+
 async function notify(env, kind, force = false) {
   if (!env.DISCORD_WEBHOOK) return { ok: false, error: 'DISCORD_WEBHOOKが設定されていません' };
   const tasks = (await env.TASKS_KV.get(KEY, 'json')) || [];
-  const content = buildMessage(kind, tasks, force);
+  const streak = kind === 'night' ? await updateStreak(env, tasks, !force).catch(() => 0) : 0;
+  const content = buildMessage(kind, tasks, force, streak);
   if (!content) return { ok: true, sent: false };
   const res = await fetch(env.DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: content.slice(0, 1900) }) });
   return res.ok ? { ok: true, sent: true } : { ok: false, error: `Discordへの送信に失敗しました（${res.status}）` };
