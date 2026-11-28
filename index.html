@@ -67,6 +67,7 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
 .subject{margin-bottom:20px}.subject h2{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 2px 9px}.subject h2::before{content:"";width:12px;height:12px;border-radius:4px;background:var(--s)}.subject h2 small{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
 [hidden]{display:none!important}.secrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line,#8883)}.secopt{display:flex;gap:8px;align-items:flex-start;padding:6px 0}.secopt input{width:auto;margin-top:3px}
 .day.has-manual em{text-decoration:underline;font-weight:700}.stepper{display:flex;align-items:center;gap:4px}.stepper button{min-width:34px}.bulk{margin-top:12px;padding:10px;border:1px solid var(--line,#8883);border-radius:10px}.bulk summary{font-weight:700;cursor:pointer}.bulk .dows{display:flex;flex-wrap:wrap;gap:4px 10px;margin:8px 0}.bulk .dows label{display:flex;align-items:center;gap:3px}.bulk .dows input{width:auto}.bulk .brow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pace{font-weight:800;margin-left:6px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -148,6 +149,9 @@ dialog{border:0;border-radius:20px;background:var(--panel);color:var(--text);wid
   <label class="field">アクセスキー（WorkerのAPI_TOKEN）<input id="cloudToken" type="password"></label>
   <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="autoSaveChk" style="width:auto"> 変更したら自動でクラウドへ保存する</label>
   <button class="wide" id="cloudConnectBtn">接続設定を保存</button>
+  <h3>通知テスト（Discord）</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><button data-notify="morning">朝6時</button><button data-notify="evening">夜20時</button><button data-notify="night">夜22時</button></div>
+  <p class="muted">その通知を今すぐDiscordへ送ります。未保存の変更は、先にクラウドへ保存してから送ります。対象がない場合は「テスト送信」と書いた通知が届きます。</p>
   <h3>バックアップ</h3>
   <button class="wide" id="exportBtn">課題データをファイルに書き出す</button>
   <p class="muted">課題データはこのブラウザに自動保存され、接続設定済みなら変更の数秒後にクラウドへも自動保存されます。タイマーの記録はクラウドには保存されません。</p>
@@ -180,9 +184,9 @@ function setDirty(v){dirty=v;writeStore(DIRTY_KEY,v);$('syncBar').hidden=!(dirty
 function saveMaterials(){if(!writeStore(MAT_KEY,materials))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
 function save(){if(!writeStore(KEY,tasks))toast('この端末に保存できませんでした。',true);setDirty(true);scheduleAutoSave()}
 function setCloudStatus(message){$('cloudStatus').textContent=message}
-async function cloudRequest(method,body){
+async function cloudRequest(method,body,path='/api/tasks'){
  if(!cloudReady())throw new Error('先にWorker URLとアクセスキーを登録してください。');
- const response=await fetch(cloudConfig.url.replace(/\/$/,'')+'/api/tasks',{method,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const response=await fetch(cloudConfig.url.replace(/\/$/,'')+path,{method,headers:{'Authorization':'Bearer '+cloudConfig.token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
  const data=await response.json().catch(()=>({}));
  if(!response.ok)throw new Error(data.error||`通信エラー（${response.status}）`);
  return data;
@@ -244,6 +248,21 @@ function makePlan(t){const now=today(),days=new Map(),base=dayStart(t),total=t.e
   q=Math.max(0,Math.min(q,t.end-pos+1));days.set(d,{count:q,from:pos,to:pos+q-1,manual});pos+=q}
  return{days,short:t.end-pos+1,late}}
 function todayInfo(t){const p=makePlan(t).days.get(today());if(!p)return null;return{...p,done:Math.max(0,Math.min(p.count,t.current-p.from))}}
+/* 予定との差（問）：最初に決めた計画（均等配分＋手動の日）と、実際に進んだ数の差。マイナス＝遅れ、プラス＝先行 */
+function pace(t){
+ const lim=t.goal||t.due;if(!lim||t.current>t.end)return null;
+ const now=today();
+ if(!t.track||t.track.limit!==lim||t.track.end!==t.end){t.track={date:now,from:Math.max(t.start,dayStart(t)),limit:lim,end:t.end};save()}
+ const k=t.track,P0=k.from,total=t.end-P0+1;if(total<=0)return null;
+ const span=Math.max(0,Math.min(1000,daysBetween(k.date,lim)+1)),dates=Array.from({length:span},(_,i)=>addDays(k.date,i));
+ const fixed=d=>t.manual?.[d];
+ let rest=Math.max(0,total-dates.reduce((a,d)=>a+(fixed(d)??0),0)),free=dates.filter(d=>fixed(d)===undefined).length,cum=0,py=0,pt=0;
+ for(const d of dates){let q=fixed(d);if(q===undefined){q=Math.ceil(rest/free);rest-=q;free--}
+  cum=Math.min(total,cum+q);if(d<now)py=cum;if(d<=now)pt=cum}
+ if(now>dates.at(-1)||!span){py=pt=total}
+ const carry=dayStart(t)-P0-py,live=t.current-P0-pt;
+ return{diff:Math.max(carry,live)}}
+const paceTag=d=>d?`<span class="pace ${d<0?'behind':'ahead'}">${d>0?'+':'-'}${Math.abs(d)}問</span>`:'';
 function deadline(t){const now=today(),d=t.due||t.goal;if(!d)return{text:'期限なし',cls:''};
  const n=daysBetween(now,d),time=t.due?t.dueTime:t.goalTime,kind=t.due?'提出':'目標';
  const passed=n<0||(n===0&&time&&time<new Date().toTimeString().slice(0,5));
@@ -261,10 +280,10 @@ function renderList(){
  $('listPane').hidden=calendar;$('calendarPane').hidden=!calendar;
  $('syncBar').hidden=!(dirty&&cloudReady());
  if(calendar){renderCalendar();return}
- const list=activeTasks(),infos=new Map(list.map(t=>[t.id,todayInfo(t)]));
+ const list=activeTasks(),infos=new Map(list.map(t=>[t.id,todayInfo(t)])),paces=new Map(list.map(t=>[t.id,pace(t)?.diff||0])),paceSum=[...paces.values()].reduce((a,b)=>a+b,0);
  const goal=[...infos.values()].reduce((a,p)=>a+(p?.count||0),0),done=[...infos.values()].reduce((a,p)=>a+(p?.done||0),0);
  const remaining=list.reduce((a,t)=>a+calc(t).remaining,0);
- $('summaryCard').innerHTML=goal?`<div class="summary-line"><span>今日の目標 <strong>${done} / ${goal}問</strong></span><span class="muted">全残り ${remaining}問</span></div><div class="bar"><div class="fill" style="width:${done/goal*100}%"></div></div>`:`<div class="summary-line" style="margin:0"><span>残り <strong>${remaining}問</strong></span><span class="muted">期限を設定すると今日の目標が出ます</span></div>`;
+ $('summaryCard').innerHTML=goal?`<div class="summary-line"><span>今日の目標 <strong>${done} / ${goal}問</strong></span><span class="muted">全残り ${remaining}問${paceTag(paceSum)}</span></div><div class="bar"><div class="fill" style="width:${done/goal*100}%"></div></div>`:`<div class="summary-line" style="margin:0"><span>残り <strong>${remaining}問</strong></span><span class="muted">期限を設定すると今日の目標が出ます</span></div>`;
  const cats=CATEGORIES.filter(c=>list.some(t=>groupOf(t)===c));
  if(!cats.includes(active))active='すべて';
  $('tabs').hidden=cats.length<2;
@@ -274,7 +293,7 @@ function renderList(){
  const shown=list.filter(t=>active==='すべて'||groupOf(t)===active).sort((a,b)=>key(a).localeCompare(key(b)));
  const note=group=>{const sum=f=>group.reduce((a,t)=>a+f(t),0),goal=sum(t=>infos.get(t.id)?.count||0);return`残り${sum(t=>calc(t).remaining)}問${goal?`・今日 ${sum(t=>infos.get(t.id)?.done||0)}/${goal}問`:''}`};
  $('taskList').innerHTML=shown.length?bySubject(shown,note,t=>{const c=calc(t),finished=t.current>t.end,p=infos.get(t.id),d=deadline(t),open=openId===t.id;
-  return`<article class="item ${finished?'finished':''}" data-s="${groupOf(t)}"><div class="item-main"><button class="item-info" data-open="${t.id}" aria-expanded="${open}"><span class="item-top">${t.subject===groupOf(t)?'':`<span class="tag">${esc(t.subject)}</span>`}<span class="item-name">${esc(label(t))}</span></span><span class="item-sub">${finished?'<b>全部終わりました</b>':`<b>次 ${Math.max(t.start,t.current)}番</b><span>残り${c.remaining}</span>`}<span class="due ${finished?'':d.cls}">${finished?'':d.text}</span></span><span class="bar thin"><span class="fill" style="width:${c.rate}%"></span></span>${p&&!finished?`<span class="today ${p.done>=p.count?'ok':''}">${p.count?(p.done>=p.count?`✓ 今日の分 ${p.count}問 完了`:`今日 ${p.done}/${p.count}問（${rangeText(p)}）`):'今日はお休み'}</span>`:''}</button>${finished?`<button class="clear-btn" data-clear="${t.id}">✓ クリア</button>`:`<button class="plus" data-step="1" data-id="${t.id}" aria-label="${esc(label(t))}を1問進める">＋1</button>`}</div>${open?`<div class="item-more"><div class="muted">範囲 ${t.start}〜${t.end}・達成 ${c.rate}%${t.due?`<br>提出日 ${shortDate(t.due,t.dueTime)}`:''}${t.goal?`<br>目標完了 ${shortDate(t.goal,t.goalTime)}`:''}</div><div class="two"><button data-step="-1" data-id="${t.id}" ${t.current<=t.start?'disabled':''}>−1 戻す</button><button class="primary" data-timer="${t.id}" ${finished?'disabled':''}>⏱ タイマー</button></div></div>`:''}</article>`}):`<div class="empty">進行中の課題はありません。<br><button class="primary" data-add>＋ 課題を追加</button></div>`;
+  return`<article class="item ${finished?'finished':''}" data-s="${groupOf(t)}"><div class="item-main"><button class="item-info" data-open="${t.id}" aria-expanded="${open}"><span class="item-top">${t.subject===groupOf(t)?'':`<span class="tag">${esc(t.subject)}</span>`}<span class="item-name">${esc(label(t))}</span></span><span class="item-sub">${finished?'<b>全部終わりました</b>':`<b>次 ${Math.max(t.start,t.current)}番</b><span>残り${c.remaining}</span>${paceTag(paces.get(t.id))}`}<span class="due ${finished?'':d.cls}">${finished?'':d.text}</span></span><span class="bar thin"><span class="fill" style="width:${c.rate}%"></span></span>${p&&!finished?`<span class="today ${p.done>=p.count?'ok':''}">${p.count?(p.done>=p.count?`✓ 今日の分 ${p.count}問 完了`:`今日 ${p.done}/${p.count}問（${rangeText(p)}）`):'今日はお休み'}</span>`:''}</button>${finished?`<button class="clear-btn" data-clear="${t.id}">✓ クリア</button>`:`<button class="plus" data-step="1" data-id="${t.id}" aria-label="${esc(label(t))}を1問進める">＋1</button>`}</div>${open?`<div class="item-more"><div class="muted">範囲 ${t.start}〜${t.end}・達成 ${c.rate}%${paces.get(t.id)?`<br>予定との差 ${paceTag(paces.get(t.id))}（${paces.get(t.id)<0?'遅れ':'先行'}）`:''}${t.due?`<br>提出日 ${shortDate(t.due,t.dueTime)}`:''}${t.goal?`<br>目標完了 ${shortDate(t.goal,t.goalTime)}`:''}</div><div class="two"><button data-step="-1" data-id="${t.id}" ${t.current<=t.start?'disabled':''}>−1 戻す</button><button class="primary" data-timer="${t.id}" ${finished?'disabled':''}>⏱ タイマー</button></div></div>`:''}</article>`}):`<div class="empty">進行中の課題はありません。<br><button class="primary" data-add>＋ 課題を追加</button></div>`;
 }
 function renderCalendar(){
  const now=today(),list=activeTasks(),plans=list.map(t=>({t,...makePlan(t)}));
@@ -295,7 +314,7 @@ $('tabs').onclick=e=>{const b=e.target.closest('[data-tab]');if(b){active=b.data
 $('prevMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);renderCalendar()};
 $('calendar').onclick=e=>{const b=e.target.closest('[data-day]');if(b){selected=b.dataset.day;renderCalendar()}};
-function setManual(t,d,v){t.manual={...t.manual,[d]:v};Object.keys(t.manual).forEach(k=>{if(k<today())delete t.manual[k]})}
+function setManual(t,d,v){t.manual={...t.manual,[d]:v}}
 let bulkOpen=false;
 const limitOf=t=>[t.goal,t.due].find(d=>d&&d>=today())||'';
 function bulkHTML(plans){
@@ -534,6 +553,10 @@ document.addEventListener('keyup',e=>{if(view==='timer'&&run&&e.code==='Space')e
 /* ---------- 設定 ---------- */
 $('settingsBtn').onclick=()=>{$('workerUrl').value=cloudConfig.url;$('cloudToken').value=cloudConfig.token;$('autoSaveChk').checked=cloudConfig.auto!==false;setCloudStatus(!cloudReady()?'クラウド未接続です。下で接続設定をしてください。':dirty?'クラウドに未保存の変更があります。':'接続設定済みです。');$('settingsDialog').showModal()};
 $('closeSettingsBtn').onclick=()=>$('settingsDialog').close();
+document.querySelectorAll('[data-notify]').forEach(b=>b.onclick=()=>cloudAction(b,async()=>{
+ if(dirty){const sent=JSON.stringify([tasks,materials]);await cloudRequest('PUT',{tasks,materials});if(sent===JSON.stringify([tasks,materials]))setDirty(false)}
+ await cloudRequest('POST',null,'/api/notify?kind='+b.dataset.notify);
+ return'通知を送信しました。Discordを確認してください。'}));
 $('cloudConnectBtn').onclick=()=>{const url=$('workerUrl').value.trim().replace(/\/$/,''),token=$('cloudToken').value.trim();if(!/^https:\/\//i.test(url)){alert('https:// から始まるWorker URLを入力してください。');return}if(!token){alert('アクセスキーを入力してください。');return}cloudConfig={url,token,auto:$('autoSaveChk').checked};writeStore(CLOUD_KEY,cloudConfig);setCloudStatus('接続設定を保存しました。');$('syncBar').hidden=!dirty;scheduleAutoSave()};
 $('cloudSaveBtn').onclick=()=>saveToCloud($('cloudSaveBtn'));$('syncBar').onclick=()=>saveToCloud($('syncBar'));$('cloudLoadBtn').onclick=()=>loadFromCloud($('cloudLoadBtn'));
 $('exportBtn').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({tasks,materials},null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='課題トラッカー_backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
